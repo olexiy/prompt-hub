@@ -20,9 +20,9 @@ A web app for storing, versioning and reusing AI prompts: projects contain promp
 
 When Olexiy says «работай над проектом» / "work on the project", this is the procedure.
 
-## Current phase: 1 — Foundation (epic #10)
+## Current phase: 2 — MVP (epic #11)
 
-Phase 0 is done: build decided, features and versions in `docs/FEATURES.md`, architecture in `docs/research/architecture.md`, phases 1–6 as milestones and epics. Phase 1 order: #16 mockups → #17 skeleton → #18 CI → #19 test harness → #20 DB schema → #21 environments (needs Olexiy's Cloudflare + Supabase accounts) → #22 single-user sign-in (invites in Phase 2) → #23 security baseline → #24 app shell → #25 vertical slice.
+Phase 1 is done (2026-10-23): production at https://prompt-hub.ol-sakura.workers.dev, staging and PR previews from Actions. Phase 2 order (epic #11): #48 folders ✓ → #49 versions ✓ → #50 diff ✓ → fixes from the prod run #69 Cyrillic slugs, #70 save edits the current version → #51 manage/delete/duplicate → #52 meta → #53 public → #54 tags → #55 search → #56 → #57 → #58 invites (needs #68 SMTP) → #59 → #36/#37 → #60 → #38 → #61 → release.
 
 - **The repo is public:** never commit secrets, personal data or run data; push protection and gitleaks are a safety net, not the plan.
 - **Feature talk with Olexiy:** he dictates by voice; collect ideas as a numbered list first, prioritise afterwards. Feature IDs in `docs/FEATURES.md` are stable references.

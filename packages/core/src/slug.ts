@@ -28,18 +28,68 @@ export function isValidSlug(value: string): boolean {
 }
 
 /**
+ * Cyrillic → Latin for slug suggestions: Russian and Ukrainian letters, a simple readable scheme
+ * ("щ" → "shch", "ю" → "yu", soft and hard signs dropped). Lowercase only; applied after lowercasing.
+ */
+const CYRILLIC: Readonly<Record<string, string>> = {
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  ґ: "g",
+  д: "d",
+  е: "e",
+  ё: "e",
+  є: "ye",
+  ж: "zh",
+  з: "z",
+  и: "i",
+  і: "i",
+  ї: "yi",
+  й: "y",
+  к: "k",
+  л: "l",
+  м: "m",
+  н: "n",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  у: "u",
+  ў: "u",
+  ф: "f",
+  х: "kh",
+  ц: "ts",
+  ч: "ch",
+  ш: "sh",
+  щ: "shch",
+  ъ: "",
+  ы: "y",
+  ь: "",
+  э: "e",
+  ю: "yu",
+  я: "ya",
+};
+
+/**
  * Suggest a slug from a display name, e.g. "Bus stop – 9 s" → "bus-stop-9-s".
- * Letters outside a–z are dropped after removing accents, so "Größe" → "grosse" and
- * "Привет" → "" (the caller then asks the user for a slug). Not used for validation.
+ * Cyrillic is transliterated ("Привет мир" → "privet-mir"), accents are removed ("Größe" → "grosse"),
+ * any other letter is dropped; an empty result means the caller asks the user for a slug.
+ * Not used for validation.
  */
 export function suggestSlug(name: string): string {
-  return name
-    .normalize("NFKD")
-    .replace(/ß/g, "ss")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, SLUG_MAX_LENGTH)
-    .replace(/-+$/, "");
+  return (
+    name
+      .toLowerCase()
+      // Before NFKD, which would split "й", "ё" and "ї" into a base letter and a combining mark.
+      .replace(/[Ѐ-ӿ]/g, (ch) => CYRILLIC[ch] ?? ch)
+      .normalize("NFKD")
+      .replace(/ß/g, "ss")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, SLUG_MAX_LENGTH)
+      .replace(/-+$/, "")
+  );
 }
