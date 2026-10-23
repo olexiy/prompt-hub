@@ -61,10 +61,11 @@ jobs:
           url=$(printf '%s\n' "$out" | grep -Eo 'https://pr-[^ ]+\.workers\.dev' | head -1)
           [ -n "$url" ] || { printf '%s\n' "$out" | tail -20; exit 1; }
           echo "url=$url" >> "$GITHUB_OUTPUT"
+      # A fresh route can answer 404 for a few seconds after a deploy; plain --retry skips 4xx.
       - name: Smoke test
         env:
           URL: ${{ steps.upload.outputs.url }}
-        run: curl --fail --silent --show-error --retry 5 --retry-delay 3 "$URL/api/health"
+        run: curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors "$URL/api/health"
       - name: Post the preview URL
         env:
           GH_TOKEN: ${{ github.token }}
@@ -106,9 +107,10 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           pnpm --filter @prompt-hub/api exec wrangler deploy --env "$TARGET"             --var "SUPABASE_PUBLISHABLE_KEY:$SUPABASE_PUBLISHABLE_KEY"
+      # A fresh route can answer 404 for a few seconds after a deploy; plain --retry skips 4xx.
       - name: Smoke test
         env:
           URL: ${{ vars.APP_URL }}
         run: |
-          curl --fail --silent --show-error --retry 5 --retry-delay 3 "$URL/api/health"
-          curl --fail --silent --show-error --head "$URL/" | grep -i '^content-security-policy:'
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors "$URL/api/health"
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors --head "$URL/" | grep -i '^content-security-policy:'

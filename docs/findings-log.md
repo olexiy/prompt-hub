@@ -57,3 +57,7 @@ Observations that are not decisions: measurements, surprises, things that did no
 ## 2026-10-23 — Vendor numbers disagree across aggregators
 
 For Langfuse, Agenta and PromptLayer, third-party pricing sites gave different prices and feature splits than the vendors' own pages. The market scan uses vendor pages and the GitHub API only; aggregator numbers are marked as such.
+
+## 2026-10-23 — A brand-new workers.dev route answers 404 for a moment
+
+The first production deploy (run 40019896834) went through, but the smoke test 0.1 s later got 404 from the fresh `prompt-hub.ol-sakura.workers.dev` route; a minute later it served 200. `curl --retry` does not retry 4xx, so the smoke tests use `--retry-all-errors` (#65).
