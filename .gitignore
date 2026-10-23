@@ -1,0 +1,33 @@
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies and build output
+node_modules/
+target/
+build/
+dist/
+.gradle/
+.angular/
+coverage/
+playwright-report/
+test-results/
+
+# Local data
+data/
+*.sqlite
+*.db
+*.log
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
