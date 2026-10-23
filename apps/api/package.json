@@ -12,7 +12,10 @@
   },
   "dependencies": {
     "@prompt-hub/core": "workspace:*",
-    "hono": "^4.13.13"
+    "@prompt-hub/db": "workspace:*",
+    "hono": "^4.13.13",
+    "jose": "^6.2.13",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.4.6",

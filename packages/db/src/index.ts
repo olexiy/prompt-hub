@@ -4,11 +4,15 @@ import postgres from "postgres";
 import * as schema from "./schema";
 
 export * from "./schema";
+// Re-exported so every package uses the one drizzle-orm instance resolved here.
+export { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 export { schema };
 
 /**
- * Drizzle client for one request. On Workers the connection string comes from the Hyperdrive
- * binding (#21), which pools connections, so a small client per request is the intended use.
+ * Drizzle client for one request (or one test). On Workers the connection string comes from the
+ * Hyperdrive binding, which pools the real database connections; options follow Cloudflare's
+ * Hyperdrive + postgres.js guide. Workers code does not call `close()` (the guide doesn't
+ * either: ending the socket mid-request leaves a rejected read in the runtime); Node callers do.
  */
 export function createDb(connectionString: string) {
   const client = postgres(connectionString, { max: 5, fetch_types: false, prepare: true });
