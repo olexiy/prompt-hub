@@ -1,0 +1,547 @@
+<title>Prompt Hub Mockups</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: GitHub-like app frame — sticky header, then one view at a time (sign-in, dashboard, project, prompt, history, account). Tokens follow Primer (GitHub's design system), per ADR #4. */
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f6f8fa;
+  --bg-inset: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #59636e;
+  --border: #d1d9e0;
+  --border-muted: #d1d9e0b3;
+  --accent: #0969da;
+  --accent-subtle: #ddf4ff;
+  --success: #1f883d;
+  --success-hover: #1c8139;
+  --success-fg: #1a7f37;
+  --danger: #d1242f;
+  --danger-subtle: #ffebe9;
+  --add-bg: #dafbe1;
+  --add-word: #aceebb;
+  --del-bg: #ffebe9;
+  --del-word: #ffcecb;
+  --var-bg: #fff8c5;
+  --var-fg: #7d4e00;
+  --attention: #9a6700;
+  --done: #8250df;
+  --btn-bg: #f6f8fa;
+  --btn-hover: #eff2f5;
+  --on-strong: #ffffff;
+  --shadow: 0 1px 0 #1f23280a;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --bg-subtle: #151b23; --bg-inset: #010409; --fg: #f0f6fc; --fg-muted: #9198a1;
+    --border: #3d444d; --border-muted: #3d444db3; --accent: #4493f8; --accent-subtle: #388bfd1a;
+    --success: #238636; --success-hover: #29903b; --success-fg: #3fb950; --danger: #f85149; --danger-subtle: #f851491a;
+    --add-bg: #2ea04326; --add-word: #2ea04366; --del-bg: #f851491a; --del-word: #f8514966;
+    --var-bg: #bb800926; --var-fg: #d29922; --attention: #d29922; --done: #ab7df8;
+    --btn-bg: #212830; --btn-hover: #262c36; --on-strong: #ffffff; --shadow: 0 0 transparent;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --bg-subtle: #151b23; --bg-inset: #010409; --fg: #f0f6fc; --fg-muted: #9198a1;
+  --border: #3d444d; --border-muted: #3d444db3; --accent: #4493f8; --accent-subtle: #388bfd1a;
+  --success: #238636; --success-hover: #29903b; --success-fg: #3fb950; --danger: #f85149; --danger-subtle: #f851491a;
+  --add-bg: #2ea04326; --add-word: #2ea04366; --del-bg: #f851491a; --del-word: #f8514966;
+  --var-bg: #bb800926; --var-fg: #d29922; --attention: #d29922; --done: #ab7df8;
+  --btn-bg: #212830; --btn-hover: #262c36; --on-strong: #ffffff; --shadow: 0 0 transparent;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 3px; }
+svg.oi { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; flex: none; vertical-align: text-bottom; }
+.muted { color: var(--fg-muted); }
+.mono { font-family: var(--mono); }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+/* Header */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg-subtle); }
+.header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg-subtle); border-bottom: 1px solid var(--border); }
+.header-inner { display: flex; align-items: center; gap: 12px; padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.logo { display: flex; align-items: center; gap: 8px; color: var(--fg); font-weight: 600; }
+.logo-mark { width: 28px; height: 28px; border-radius: 50%; background: var(--fg); color: var(--bg); display: grid; place-items: center; font: 600 13px var(--mono); }
+.crumb { display: flex; gap: 4px; align-items: center; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumb a { color: var(--fg); }
+.crumb b { font-weight: 600; }
+.search { margin-left: auto; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 8px; color: var(--fg-muted); background: var(--bg); min-width: 0; width: 280px; }
+.search input { border: 0; background: transparent; color: var(--fg); font: inherit; width: 100%; outline: none; }
+.kbd { border: 1px solid var(--border); border-radius: 4px; font: 11px var(--mono); padding: 0 4px; color: var(--fg-muted); }
+.icon-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--btn-bg); color: var(--fg-muted); cursor: pointer; }
+.icon-btn:hover { background: var(--btn-hover); color: var(--fg); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #bf3989, #0969da); color: #fff; display: grid; place-items: center; font-weight: 600; font-size: 13px; flex: none; border: 0; cursor: pointer; }
+.mock-nav { display: flex; gap: 4px; flex-wrap: wrap; padding-block: 6px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-top: 1px dashed var(--border); font-size: 12px; color: var(--fg-muted); align-items: center; }
+.mock-nav a { padding: 2px 8px; border-radius: 999px; color: var(--fg-muted); }
+.mock-nav a.on { background: var(--accent-subtle); color: var(--accent); font-weight: 600; }
+
+/* Page */
+.page { max-width: 1280px; margin: 0 auto; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.view { display: grid; gap: 16px; }
+
+/* Primitives */
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--btn-bg); color: var(--fg); font: 500 14px var(--font); cursor: pointer; white-space: nowrap; box-shadow: var(--shadow); }
+.btn:hover { background: var(--btn-hover); text-decoration: none; }
+.btn-primary { background: var(--success); border-color: transparent; color: var(--on-strong); }
+.btn-primary:hover { background: var(--success-hover); }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: var(--on-strong); }
+.btn-sm { height: 28px; padding: 0 8px; font-size: 12px; }
+.label { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; padding: 0 7px; font-size: 12px; font-weight: 500; line-height: 18px; color: var(--fg-muted); white-space: nowrap; }
+.label-live { color: var(--success-fg); border-color: var(--success-fg); }
+.label-best { color: var(--done); border-color: var(--done); }
+.topic { display: inline-flex; padding: 0 10px; border-radius: 999px; background: var(--accent-subtle); color: var(--accent); font-size: 12px; font-weight: 500; line-height: 22px; }
+.topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.box { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); min-width: 0; }
+.box-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 16px; background: var(--bg-subtle); border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.box-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--border-muted); min-width: 0; }
+.box-row:first-of-type { border-top: 0; }
+.box-row:hover { background: var(--bg-subtle); }
+.input, select.input { height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--fg); font: inherit; width: 100%; }
+.input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.field { display: grid; gap: 4px; }
+.field label { font-weight: 600; font-size: 14px; }
+.field .hint { font-size: 12px; color: var(--fg-muted); }
+.tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tab { display: flex; align-items: center; gap: 8px; padding: 8px 8px 10px; color: var(--fg); border-bottom: 2px solid transparent; white-space: nowrap; }
+.tab:hover { text-decoration: none; background: var(--bg-subtle); border-radius: var(--radius) var(--radius) 0 0; }
+.tab.on { border-bottom-color: #fd8c73; font-weight: 600; }
+.count { background: var(--btn-hover); border-radius: 999px; padding: 0 6px; font-size: 12px; color: var(--fg); }
+.flash { border: 1px solid var(--accent); background: var(--accent-subtle); border-radius: var(--radius); padding: 12px 16px; }
+
+/* Sign-in */
+.signin { max-width: 340px; margin: 32px auto; display: grid; gap: 16px; text-align: center; }
+.signin .logo-mark { width: 48px; height: 48px; font-size: 18px; margin: 0 auto; }
+.signin h1 { font-size: 24px; font-weight: 300; }
+.signin .box { padding: 16px; display: grid; gap: 16px; text-align: left; background: var(--bg-subtle); }
+.signin .note { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; font-size: 14px; }
+
+/* Dashboard */
+.dash { display: grid; grid-template-columns: 296px minmax(0, 1fr); gap: 24px; align-items: start; }
+.side h2 { font-size: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.side-list { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.side-list a { color: var(--fg); font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.proj-row { display: grid; gap: 6px; padding: 16px 0; border-top: 1px solid var(--border-muted); }
+.proj-row h3 { font-size: 20px; font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.meta-line { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--fg-muted); }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+.toolbar .input { flex: 1 1 200px; width: auto; }
+
+/* Project */
+.repo-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 20px; }
+.repo-head a { color: var(--accent); }
+.proj-grid { display: grid; grid-template-columns: minmax(0, 1fr) 296px; gap: 24px; align-items: start; }
+.files .box-row a { color: var(--fg); }
+.files .name { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 200px; }
+.files .name a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.files .msg { flex: 2 1 200px; color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.files .when { color: var(--fg-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ico-folder { color: #54aeff; }
+.ico-file { color: var(--fg-muted); }
+.about { display: grid; gap: 12px; }
+.about h2 { font-size: 16px; }
+.about dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: 14px; }
+.about dt { color: var(--fg-muted); }
+.about dd { margin: 0; }
+
+/* Prompt */
+.path { font-size: 20px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+.path a { color: var(--accent); }
+.path b { font-weight: 600; word-break: break-word; }
+.prompt-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.file-head { justify-content: space-between; }
+.file-head .left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.file-head .right { display: flex; gap: 8px; flex-wrap: wrap; }
+.prompt-body { margin: 0; padding: 16px; font: 12px/20px var(--mono); white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
+.v { background: var(--var-bg); color: var(--var-fg); border-radius: 4px; padding: 0 2px; font-weight: 600; }
+.stats { display: flex; gap: 16px; flex-wrap: wrap; padding: 8px 16px; border-top: 1px solid var(--border-muted); font-size: 12px; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.panel { display: grid; gap: 12px; padding: 16px; }
+.panel h2 { font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+.var-name { font-family: var(--mono); font-size: 12px; }
+.warn { color: var(--attention); font-size: 12px; display: flex; gap: 6px; align-items: center; }
+.copied { color: var(--success-fg); font-size: 12px; min-height: 18px; }
+.meta-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.meta-table td { padding: 6px 16px; border-top: 1px solid var(--border-muted); vertical-align: top; }
+.meta-table td:first-child { color: var(--fg-muted); white-space: nowrap; width: 1%; }
+
+/* History */
+.day { font-size: 14px; color: var(--fg-muted); display: flex; gap: 8px; align-items: center; }
+.commit { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.commit .what { flex: 1 1 260px; min-width: 0; display: grid; gap: 2px; }
+.commit .what a { color: var(--fg); font-weight: 600; }
+.commit .sha { font: 12px var(--mono); color: var(--fg-muted); }
+.diff { overflow-x: auto; }
+.diff table { border-collapse: collapse; width: 100%; font: 12px/20px var(--mono); min-width: 560px; }
+.diff td { padding: 0 8px; vertical-align: top; white-space: pre-wrap; word-break: break-word; }
+.diff td.n { width: 1%; color: var(--fg-muted); text-align: right; user-select: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.diff tr.del td { background: var(--del-bg); }
+.diff tr.add td { background: var(--add-bg); }
+.diff del { background: var(--del-word); text-decoration: none; border-radius: 2px; }
+.diff ins { background: var(--add-word); text-decoration: none; border-radius: 2px; }
+.diff tr.hunk td { background: var(--accent-subtle); color: var(--fg-muted); }
+
+/* Account */
+.acct { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
+.acct-nav { display: grid; gap: 2px; }
+.acct-nav a { padding: 6px 8px; border-radius: var(--radius); color: var(--fg); }
+.acct-nav a.on { background: var(--bg-subtle); font-weight: 600; box-shadow: inset 2px 0 0 #fd8c73; }
+.acct-main { display: grid; gap: 24px; max-width: 640px; }
+.acct-main h2 { font-size: 24px; font-weight: 400; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.radio-row { display: flex; gap: 16px; flex-wrap: wrap; }
+.radio-row label { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+.danger { border-color: var(--danger); }
+.danger .box-row { justify-content: space-between; flex-wrap: wrap; }
+
+/* Phone */
+@media (max-width: 860px) {
+  .dash, .proj-grid, .prompt-grid, .acct { grid-template-columns: minmax(0, 1fr); }
+  .search { width: auto; flex: 1 1 auto; }
+  .search .kbd, .hide-sm { display: none; }
+  .files .msg { display: none; }
+  .side { order: 2; }
+}
+@media (max-width: 520px) {
+  .crumb { display: none; }
+  .logo span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.75 3.5h4l1.5 1.5h7v7.75a.75.75 0 0 1-.75.75H1.75a.75.75 0 0 1-.75-.75V4.25a.75.75 0 0 1 .75-.75Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-file" viewBox="0 0 16 16"><path d="M3.5 1.75h6l3 3v9.5h-9z"/><path d="M9.5 1.75v3h3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.25" y="5.25" width="8.5" height="8.5" rx="1.25"/><path d="M10.75 5.25V3.5a1.25 1.25 0 0 0-1.25-1.25h-6A1.25 1.25 0 0 0 2.25 3.5v6a1.25 1.25 0 0 0 1.25 1.25h1.75"/></symbol>
+  <symbol id="i-history" viewBox="0 0 16 16"><path d="M2.25 8A5.75 5.75 0 1 0 4 3.9"/><path d="M1.75 2v3h3"/><path d="M8 5v3.25l2 1.5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c2 2 2 10.5 0 12.5M8 1.75c-2 2-2 10.5 0 12.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 2.5v11M2.5 8h11"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13.5 9.5A5.75 5.75 0 0 1 6.5 2.5a5.75 5.75 0 1 0 7 7Z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 16 16"><path d="M1.75 2.75v4.5l7 7 5.5-5.5-7-7h-4.5a1 1 0 0 0-1 1Z"/><circle cx="5" cy="5" r=".75" fill="currentColor"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.75 4h10.5M6 4V2.5h4V4M4 4l.75 9.5h6.5L12 4"/></symbol>
+  <symbol id="i-diff" viewBox="0 0 16 16"><path d="M8 2v6M5 5h6M5 12h6"/><rect x="2" y="1.5" width="12" height="13" rx="1.5"/></symbol>
+  <symbol id="i-dup" viewBox="0 0 16 16"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="6" y="6" width="8" height="8" rx="1"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 1.75 14.75 13.5H1.25Z"/><path d="M8 6v3.5M8 11.5v.25"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 11V2.5M4.5 6 8 2.5 11.5 6M2.5 11v2.5h11V11"/></symbol>
+</svg>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="#dashboard" aria-label="Prompt Hub home"><span class="logo-mark">{ }</span><span>Prompt Hub</span></a>
+    <div class="crumb" id="crumb"></div>
+    <label class="search" for="q"><svg class="oi"><use href="#i-search"/></svg><input id="q" placeholder="Search prompts, tags…" aria-label="Search"><span class="kbd">/</span></label>
+    <button class="icon-btn" id="theme" type="button" title="Theme: system" aria-label="Switch theme"><svg class="oi"><use href="#i-sun"/></svg></button>
+    <a class="avatar" href="#account" aria-label="Account">O</a>
+  </div>
+  <nav class="mock-nav" aria-label="Mockup screens">
+    <span>Mockup screens:</span>
+    <a href="#signin">Sign in</a><a href="#dashboard">Dashboard</a><a href="#project">Project</a><a href="#prompt">Prompt</a><a href="#history">History &amp; diff</a><a href="#account">Account</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <!-- Sign in -->
+  <section class="view" id="v-signin" hidden>
+    <div class="signin">
+      <span class="logo-mark">{ }</span>
+      <h1>Sign in to Prompt Hub</h1>
+      <form class="box" onsubmit="event.preventDefault(); location.hash='dashboard'">
+        <div class="field"><label for="email">Email address</label><input class="input" id="email" type="email" value="olexiy@example.com" autocomplete="username"></div>
+        <div class="field"><label for="pw" style="display:flex;justify-content:space-between">Password <a href="#signin" style="font-weight:400;font-size:12px">Forgot password?</a></label><input class="input" id="pw" type="password" value="example-only" autocomplete="current-password"></div>
+        <button class="btn btn-primary" type="submit" style="justify-content:center">Sign in</button>
+      </form>
+      <div class="note">Sign-up is closed. Accounts are created by invitation.</div>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section class="view" id="v-dashboard" hidden>
+    <div class="dash">
+      <aside class="side">
+        <h2>Projects <a class="btn btn-primary btn-sm" href="#project"><svg class="oi"><use href="#i-plus"/></svg>New</a></h2>
+        <input class="input" id="side-filter" placeholder="Find a project…" aria-label="Find a project" style="margin-bottom:12px">
+        <ul class="side-list">
+          <li><a href="#project"><span class="avatar" style="width:20px;height:20px;font-size:10px">O</span>olexiy/comfy-h3</a></li>
+          <li><a href="#project"><span class="avatar" style="width:20px;height:20px;font-size:10px">O</span>olexiy/claude-coding</a></li>
+          <li><a href="#project"><span class="avatar" style="width:20px;height:20px;font-size:10px">O</span>olexiy/research</a></li>
+          <li><a href="#project"><span class="avatar" style="width:20px;height:20px;font-size:10px">O</span>olexiy/writing-de</a></li>
+        </ul>
+      </aside>
+      <div style="min-width:0">
+        <div class="toolbar">
+          <input class="input" id="proj-filter" placeholder="Filter projects by name or tag" aria-label="Filter projects">
+          <select class="input" id="sort" aria-label="Sort" style="width:auto"><option>Recently edited</option><option>Recently copied</option><option>Name</option></select>
+          <a class="btn btn-primary" href="#project"><svg class="oi"><use href="#i-plus"/></svg>New project</a>
+        </div>
+        <div style="margin-top:16px">
+          <div class="proj-row">
+            <h3><a href="#project">comfy-h3</a><span class="label">Public</span></h3>
+            <p class="muted" style="margin:0">MiniMax H3 video prompts: shot lists with appearance and background locks.</p>
+            <div class="topics"><span class="topic">comfyui</span><span class="topic">minimax-h3</span><span class="topic">video</span></div>
+            <div class="meta-line"><span>6 prompts · 2 folders</span><span>Last copy 2 hours ago</span><span>Updated today</span></div>
+          </div>
+          <div class="proj-row">
+            <h3><a href="#project">claude-coding</a><span class="label">Private</span></h3>
+            <p class="muted" style="margin:0">System prompts and task templates for coding agents.</p>
+            <div class="topics"><span class="topic">llm</span><span class="topic">software-entwicklung</span></div>
+            <div class="meta-line"><span>11 prompts</span><span>Last copy yesterday</span><span>Updated Oct 20</span></div>
+          </div>
+          <div class="proj-row">
+            <h3><a href="#project">research</a><span class="label">Private</span></h3>
+            <p class="muted" style="margin:0">Deep-research and news-search prompts, optimised for token budgets.</p>
+            <div class="topics"><span class="topic">llm</span><span class="topic">research</span></div>
+            <div class="meta-line"><span>4 prompts</span><span>Last copy Oct 18</span><span>Updated Oct 12</span></div>
+          </div>
+          <div class="proj-row">
+            <h3><a href="#project">writing-de</a><span class="label">Private</span></h3>
+            <p class="muted" style="margin:0">Letters and emails in German.</p>
+            <div class="topics"><span class="topic">writing</span><span class="topic">deutsch</span></div>
+            <div class="meta-line"><span>3 prompts</span><span>Updated Sep 30</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project -->
+  <section class="view" id="v-project" hidden>
+    <div class="repo-head"><svg class="oi"><use href="#i-globe"/></svg><a href="#dashboard">olexiy</a><span class="muted">/</span><b>comfy-h3</b><span class="label">Public</span></div>
+    <nav class="tabs" aria-label="Project">
+      <a class="tab on" href="#project"><svg class="oi"><use href="#i-file"/></svg>Prompts <span class="count">6</span></a>
+      <a class="tab" href="#account">Settings</a>
+    </nav>
+    <div class="proj-grid">
+      <div style="min-width:0;display:grid;gap:16px">
+        <div class="toolbar">
+          <input class="input" id="file-filter" placeholder="Go to prompt" aria-label="Go to prompt">
+          <button class="btn" type="button"><svg class="oi"><use href="#i-upload"/></svg><span class="hide-sm">Import</span></button>
+          <button class="btn" type="button"><svg class="oi"><use href="#i-folder"/></svg><span class="hide-sm">New folder</span></button>
+          <a class="btn btn-primary" href="#prompt"><svg class="oi"><use href="#i-plus"/></svg>New prompt</a>
+        </div>
+        <div class="box files">
+          <div class="box-head"><span class="avatar" style="width:20px;height:20px;font-size:10px">O</span><b>olexiy</b><span class="muted">v5 of bus-stop-9s: Tighter camera note</span><span class="muted" style="margin-left:auto">today</span></div>
+          <div class="box-row"><span class="name"><svg class="oi ico-folder"><use href="#i-folder"/></svg><a href="#project">bus-stop</a></span><span class="msg">4 prompts</span><span class="when">today</span></div>
+          <div class="box-row"><span class="name"><svg class="oi ico-folder"><use href="#i-folder"/></svg><a href="#project">studio-portraits</a></span><span class="msg">2 prompts</span><span class="when">Oct 15</span></div>
+          <div class="box-row"><span class="name"><svg class="oi ico-file"><use href="#i-file"/></svg><a href="#prompt">bus-stop-9s</a></span><span class="msg">v5 · Tighter camera note</span><span class="when">today</span></div>
+          <div class="box-row"><span class="name"><svg class="oi ico-file"><use href="#i-file"/></svg><a href="#prompt">bus-stop-15s</a></span><span class="msg">v3 · Add bus pass in shot 6</span><span class="when">Oct 21</span></div>
+          <div class="box-row"><span class="name"><svg class="oi ico-file"><use href="#i-file"/></svg><a href="#prompt">plain-start-frame</a></span><span class="msg">v1 · Imported from comfy-h3-studio</span><span class="when">Oct 14</span></div>
+        </div>
+      </div>
+      <aside class="about">
+        <h2>About</h2>
+        <p style="margin:0">MiniMax H3 video prompts: shot lists with appearance and background locks.</p>
+        <div class="topics"><span class="topic">comfyui</span><span class="topic">minimax-h3</span><span class="topic">video</span></div>
+        <dl>
+          <dt>Visibility</dt><dd>Public, latest versions only</dd>
+          <dt>Prompts</dt><dd>6 in 2 folders</dd>
+          <dt>Owner</dt><dd><a href="#account">olexiy</a></dd>
+        </dl>
+        <button class="btn" type="button" style="justify-self:start">Export as zip</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Prompt -->
+  <section class="view" id="v-prompt" hidden>
+    <div class="path"><a href="#dashboard">olexiy</a><span class="muted">/</span><a href="#project">comfy-h3</a><span class="muted">/</span><a href="#project">bus-stop</a><span class="muted">/</span><b>bus-stop-9s</b></div>
+    <div class="topics"><span class="topic">minimax-h3</span><span class="topic">video</span><span class="topic">9s</span></div>
+    <div class="prompt-grid">
+      <div class="box">
+        <div class="box-head file-head">
+          <div class="left"><span class="label label-live">live</span><b>v5</b><span class="muted">Tighter camera note · today</span></div>
+          <div class="right">
+            <a class="btn btn-sm" href="#history"><svg class="oi"><use href="#i-history"/></svg>History <span class="count">5</span></a>
+            <button class="btn btn-sm" type="button"><svg class="oi"><use href="#i-dup"/></svg><span class="hide-sm">Duplicate</span></button>
+            <button class="btn btn-sm" type="button"><svg class="oi"><use href="#i-plus"/></svg>New version</button>
+          </div>
+        </div>
+        <pre class="prompt-body" id="body"></pre>
+        <div class="stats"><span id="chars"></span><span>≈ 410 tokens</span><span>3 variables</span><span>Type: image / video</span></div>
+      </div>
+      <aside style="display:grid;gap:16px;min-width:0">
+        <div class="box">
+          <form class="panel" id="vars" onsubmit="event.preventDefault()">
+            <h2>Variables <span class="muted" style="font-weight:400;font-size:12px">fill, then copy</span></h2>
+            <div class="field"><label for="v-age"><span class="var-name">age</span></label><input class="input" id="v-age" value="28"><span class="hint">Default: 28</span></div>
+            <div class="field"><label for="v-hair"><span class="var-name">hair</span></label><input class="input" id="v-hair" value="long wavy copper-red hair"></div>
+            <div class="field"><label for="v-place"><span class="var-name">place</span></label><select class="input" id="v-place"><option>glass bus shelter</option><option>tram stop at night</option><option>train platform</option></select></div>
+            <div class="warn" id="warn" hidden><svg class="oi"><use href="#i-warn"/></svg><span>Empty variables stay as {{…}} in the copy.</span></div>
+            <button class="btn btn-primary" id="copy" type="button" style="justify-content:center"><svg class="oi"><use href="#i-copy"/></svg>Copy prompt</button>
+            <div class="copied" id="copied" aria-live="polite"></div>
+          </form>
+        </div>
+        <div class="box">
+          <div class="box-head"><b>Meta</b></div>
+          <table class="meta-table">
+            <tr><td>Description</td><td>Static medium shot, 6 shots in 9 s, first frame from Picture 1.</td></tr>
+            <tr><td>Model</td><td class="mono">MiniMax H3</td></tr>
+            <tr><td>Workflow</td><td class="mono">h3_i2v_9s.json</td></tr>
+            <tr><td>Source</td><td><a href="#prompt">comfy-h3-studio/prompts/len_9s.txt</a></td></tr>
+          </table>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section class="view" id="v-history" hidden>
+    <div class="path"><a href="#dashboard">olexiy</a><span class="muted">/</span><a href="#project">comfy-h3</a><span class="muted">/</span><a href="#project">bus-stop</a><span class="muted">/</span><a href="#prompt">bus-stop-9s</a><span class="muted">/</span><b>History</b></div>
+    <p class="muted" style="margin:0">Only you see the history. Visitors of a public project see the live version.</p>
+    <div class="day"><svg class="oi"><use href="#i-history"/></svg>Today</div>
+    <div class="box">
+      <div class="box-row commit"><div class="what"><a href="#prompt">v5 · Tighter camera note</a><span class="sha">olexiy · 14:20</span></div><span class="label label-live">live</span><a class="btn btn-sm" href="#diff"><svg class="oi"><use href="#i-diff"/></svg>Compare with v4</a><button class="btn btn-sm" type="button"><svg class="oi"><use href="#i-copy"/></svg></button></div>
+      <div class="box-row commit"><div class="what"><a href="#prompt">v4 · Variables for age, hair and place</a><span class="sha">olexiy · 11:02</span></div><span class="label label-best">best</span><button class="btn btn-sm" type="button">Restore</button><button class="btn btn-sm btn-danger" type="button" aria-label="Delete v4"><svg class="oi"><use href="#i-trash"/></svg></button></div>
+    </div>
+    <div class="day"><svg class="oi"><use href="#i-history"/></svg>Oct 21</div>
+    <div class="box">
+      <div class="box-row commit"><div class="what"><a href="#prompt">v3 · Bus passes behind the glass in shot 6</a><span class="sha">olexiy · 19:44</span></div><button class="btn btn-sm" type="button">Restore</button><button class="btn btn-sm btn-danger" type="button" aria-label="Delete v3"><svg class="oi"><use href="#i-trash"/></svg></button></div>
+      <div class="box-row commit"><div class="what"><a href="#prompt">v2 · Negative: no music, no talking</a><span class="sha">olexiy · 18:10</span></div><button class="btn btn-sm" type="button">Restore</button><button class="btn btn-sm btn-danger" type="button" aria-label="Delete v2"><svg class="oi"><use href="#i-trash"/></svg></button></div>
+      <div class="box-row commit"><div class="what"><a href="#prompt">v1 · Imported from comfy-h3-studio</a><span class="sha">olexiy · 17:55</span></div><button class="btn btn-sm" type="button">Restore</button><button class="btn btn-sm btn-danger" type="button" aria-label="Delete v1"><svg class="oi"><use href="#i-trash"/></svg></button></div>
+    </div>
+    <div class="box diff" id="diff">
+      <div class="box-head"><svg class="oi"><use href="#i-diff"/></svg><b>v4 → v5</b><span class="muted">2 lines changed</span></div>
+      <table>
+        <tr class="hunk"><td class="n">…</td><td class="n"></td><td>@@ [Shot 6] … camera @@</td></tr>
+        <tr><td class="n">14</td><td class="n">14</td><td>[Shot 6] 7.2s-9s: a red city bus drives past behind the glass while she stays seated and smiles.</td></tr>
+        <tr class="del"><td class="n">15</td><td class="n"></td><td>- camera: handheld phone feel, <del>slight sway, gentle zoom</del>.</td></tr>
+        <tr class="add"><td class="n"></td><td class="n">15</td><td>+ camera: handheld phone feel, <ins>almost static, very slight natural sway, no zoom, no cuts</ins>.</td></tr>
+        <tr><td class="n">16</td><td class="n">16</td><td>overall_soundscape: quiet city street ambience, distant traffic, a soft breeze.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Account -->
+  <section class="view" id="v-account" hidden>
+    <div class="acct">
+      <nav class="acct-nav" aria-label="Account sections">
+        <a class="on" href="#account">Public profile</a>
+        <a href="#account">Appearance</a>
+        <a href="#account">Export data</a>
+      </nav>
+      <div class="acct-main">
+        <h2>Public profile</h2>
+        <div class="field"><label for="handle">Handle</label><input class="input mono" id="handle" value="olexiy"><span class="hint">Used in your URLs: prompthub.example/olexiy/comfy-h3</span></div>
+        <div class="field"><label for="dname">Display name</label><input class="input" id="dname" value="Olexiy"></div>
+        <h2>Appearance</h2>
+        <div class="field"><label for="lang">Language</label><select class="input" id="lang" style="max-width:240px"><option>English</option><option>Русский</option><option>Deutsch</option></select></div>
+        <div class="field"><span style="font-weight:600">Theme</span>
+          <div class="radio-row">
+            <label for="t-system"><input type="radio" name="t" id="t-system" value="system" checked> System</label>
+            <label for="t-light"><input type="radio" name="t" id="t-light" value="light"> Light</label>
+            <label for="t-dark"><input type="radio" name="t" id="t-dark" value="dark"> Dark</label>
+          </div>
+        </div>
+        <div><button class="btn btn-primary" type="button">Save</button></div>
+        <h2 style="color:var(--danger)">Danger zone</h2>
+        <div class="box danger">
+          <div class="box-row"><div><b>Export all data</b><div class="muted">Projects, prompts, versions and meta as a zip.</div></div><button class="btn" type="button">Export</button></div>
+          <div class="box-row"><div><b>Delete account</b><div class="muted">Deletes everything. Cannot be undone. You will type your handle to confirm.</div></div><button class="btn btn-danger" type="button">Delete account</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// Prompt template from olexiy/comfy-h3-studio (len_9s.txt), shortened, with variables added.
+const TEMPLATE = `integrated_multimodal_description: [Shot 1] <Picture 1> is the first frame. Whole clip is 9 seconds. Live-action. Static medium shot of a fictional {{age}}-year-old woman sitting on a black metal mesh bench inside a {{place}} in daylight.
+Appearance lock: {{hair}}, freckles, mature adult face, light everyday makeup, untucked white linen blouse with rolled sleeves, dark-blue high-waisted jeans. Keep face, outfit and proportions exactly as in <Picture 1>.
+Background lock: red brick shop with striped awning, yellow curb, glass panels with soft reflections; background stays consistent.
+[Shot 2] 0s-1.8s: she tucks a strand of hair behind her ear, then smiles warmly at the camera.
+[Shot 3] 1.8s-3.6s: she glances to her left toward the street.
+[Shot 4] 3.6s-5.4s: she takes her phone out of the black bag, looks at it, puts it back.
+[Shot 5] 5.4s-7.2s: she looks back at the camera and gives a small playful wink.
+[Shot 6] 7.2s-9s: a red city bus drives past behind the glass while she stays seated and smiles.
+camera: handheld phone feel, almost static, very slight natural sway, no zoom, no cuts.
+overall_soundscape: quiet city street ambience, distant traffic, a soft breeze.
+negative: morphing face, identity drift, extra fingers, warped hands, flicker, text, subtitles, watermark, music, talking.`;
+
+const VIEWS = ["signin", "dashboard", "project", "prompt", "history", "account"];
+const CRUMBS = {
+  signin: "",
+  dashboard: "<b>Dashboard</b>",
+  project: '<a href="#dashboard">olexiy</a> / <b>comfy-h3</b>',
+  prompt: '<a href="#project">comfy-h3</a> / <b>bus-stop-9s</b>',
+  history: '<a href="#prompt">bus-stop-9s</a> / <b>History</b>',
+  account: "<b>Account</b>",
+};
+
+/** Show the view named in the hash (diff anchors live inside the history view). */
+function route() {
+  let name = location.hash.slice(1) || "dashboard";
+  if (name === "diff") name = "history";
+  if (!VIEWS.includes(name)) name = "dashboard";
+  for (const v of VIEWS) document.getElementById("v-" + v).hidden = v !== name;
+  document.getElementById("crumb").innerHTML = CRUMBS[name];
+  document.querySelectorAll(".mock-nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + name));
+  if (location.hash === "#diff") document.getElementById("diff").scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+
+function values() {
+  return { age: document.getElementById("v-age").value.trim(), hair: document.getElementById("v-hair").value.trim(), place: document.getElementById("v-place").value };
+}
+
+/** Render the template with filled variables; empty ones stay as {{name}}. */
+function render(vals) {
+  return TEMPLATE.replace(/\{\{(\w+)\}\}/g, (m, k) => vals[k] ? vals[k] : m);
+}
+
+/** Show the template with variables highlighted and live values. */
+function paintBody() {
+  const vals = values();
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const html = esc(TEMPLATE).replace(/\{\{(\w+)\}\}/g, (m, k) => `<span class="v" title="{{${k}}}">${vals[k] ? esc(vals[k]) : "{{" + k + "}}"}</span>`);
+  document.getElementById("body").innerHTML = html;
+  document.getElementById("chars").textContent = render(vals).length.toLocaleString("en") + " characters";
+  document.getElementById("warn").hidden = Object.values(vals).every(Boolean);
+}
+
+document.getElementById("vars").addEventListener("input", paintBody);
+document.getElementById("copy").addEventListener("click", async () => {
+  const out = document.getElementById("copied");
+  try {
+    await navigator.clipboard.writeText(render(values()));
+    out.textContent = "Copied with your values.";
+  } catch {
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById("body"));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    out.textContent = "Selected. Press Ctrl+C to copy.";
+  }
+});
+
+// Theme: system → light → dark, as in the account settings.
+const ORDER = ["system", "light", "dark"];
+let theme = "system";
+try { theme = localStorage.getItem("ph-theme") || "system"; } catch {}
+function applyTheme() {
+  if (theme === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", theme);
+  const btn = document.getElementById("theme");
+  btn.title = "Theme: " + theme;
+  btn.querySelector("use").setAttribute("href", theme === "dark" ? "#i-moon" : "#i-sun");
+  const r = document.getElementById("t-" + theme); if (r) r.checked = true;
+  try { localStorage.setItem("ph-theme", theme); } catch {}
+}
+document.getElementById("theme").addEventListener("click", () => { theme = ORDER[(ORDER.indexOf(theme) + 1) % 3]; applyTheme(); });
+document.querySelectorAll('input[name="t"]').forEach(r => r.addEventListener("change", () => { theme = r.value; applyTheme(); }));
+document.addEventListener("keydown", e => { if (e.key === "/" && document.activeElement.tagName !== "INPUT") { e.preventDefault(); document.getElementById("q").focus(); } });
+
+window.addEventListener("hashchange", route);
+applyTheme();
+paintBody();
+route();
+</script>
