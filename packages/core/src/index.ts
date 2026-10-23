@@ -4,6 +4,8 @@
  */
 
 export * from "./id";
+export * from "./prefs";
+export * from "./routes";
 export * from "./slug";
 
 /** Product name shown in the UI and in API responses until the final name is chosen (#7). */

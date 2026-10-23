@@ -1,6 +1,7 @@
 import { Banner, Button, FormControl, TextInput } from "@primer/react";
 import { useEffect, useState } from "react";
 import { ApiError, post } from "../api";
+import { useI18n } from "../i18n";
 import { AuthCard } from "./AuthCard";
 
 interface RecoveryTokens {
@@ -23,6 +24,7 @@ function readFragment(): RecoveryTokens | null {
  * (they become HttpOnly cookies), wipes them from the URL, then asks for the new password.
  */
 export function ResetCallback({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n();
   const [tokens] = useState(readFragment);
   const [state, setState] = useState<"checking" | "ready" | "invalid">(
     tokens ? "checking" : "invalid",
@@ -51,7 +53,7 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
       await post("/api/auth/password", { password });
       onDone();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(err instanceof ApiError ? err.message : t("error.generic"));
     } finally {
       setBusy(false);
     }
@@ -59,23 +61,23 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
 
   if (state === "invalid") {
     return (
-      <AuthCard title="Reset your password">
+      <AuthCard title={t("auth.resetTitle")}>
         <Banner
           variant="critical"
-          title="Invalid link"
+          title={t("auth.invalidLinkTitle")}
           hideTitle
           layout="compact"
-          description="This link is invalid or has expired. Request a new one."
+          description={t("auth.invalidLink")}
         />
         <Button as="a" href="/">
-          Back to sign in
+          {t("auth.toSignIn")}
         </Button>
       </AuthCard>
     );
   }
 
   return (
-    <AuthCard title="Choose a new password">
+    <AuthCard title={t("auth.newPasswordTitle")}>
       {error && (
         <Banner variant="critical" title="Error" hideTitle layout="compact" description={error} />
       )}
@@ -87,7 +89,7 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
         style={{ display: "grid", gap: 16 }}
       >
         <FormControl required disabled={state !== "ready"}>
-          <FormControl.Label>New password</FormControl.Label>
+          <FormControl.Label>{t("auth.newPassword")}</FormControl.Label>
           <TextInput
             type="password"
             autoComplete="new-password"
@@ -97,10 +99,10 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
             }}
             block
           />
-          <FormControl.Caption>At least 12 characters.</FormControl.Caption>
+          <FormControl.Caption>{t("auth.newPasswordHint")}</FormControl.Caption>
         </FormControl>
         <Button type="submit" variant="primary" block loading={busy} disabled={state !== "ready"}>
-          Save password
+          {t("auth.savePassword")}
         </Button>
       </form>
     </AuthCard>
