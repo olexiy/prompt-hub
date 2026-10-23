@@ -53,6 +53,22 @@ export function syncDefinitions(body: string, defs: readonly VariableDef[] = [])
   return parseVariables(body).map((name) => byName.get(name) ?? { name });
 }
 
+/** A prompt body split into plain text and placeholders, for highlighting in the UI. */
+export type PromptSegment = { text: string } | { variable: string; placeholder: string };
+
+export function tokenizePrompt(body: string): PromptSegment[] {
+  const segments: PromptSegment[] = [];
+  let last = 0;
+  for (const match of body.matchAll(placeholderPattern())) {
+    const [placeholder, name] = match;
+    if (match.index > last) segments.push({ text: body.slice(last, match.index) });
+    if (name) segments.push({ variable: name, placeholder });
+    last = match.index + placeholder.length;
+  }
+  if (last < body.length) segments.push({ text: body.slice(last) });
+  return segments;
+}
+
 export interface RenderResult {
   text: string;
   /** Variables with neither a value nor a default; their placeholders stay in `text`. */
