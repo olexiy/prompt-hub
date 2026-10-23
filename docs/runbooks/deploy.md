@@ -18,6 +18,8 @@ Project refs and Hyperdrive ids are public identifiers and live in the repo. Sup
 | `CLOUDFLARE_API_TOKEN`              | GitHub environment secret, `staging` and `production`                                                         |
 | Supabase secret keys / service role | Not used by the Worker; only in the Supabase dashboard                                                        |
 
+Workers subdomain: `ol-sakura.workers.dev` — staging is **https://prompt-hub-staging.ol-sakura.workers.dev** (deployed 2026-10-23, Data API off, sign-up off, site URL set). Production is not deployed yet.
+
 GitHub variables: `CLOUDFLARE_ACCOUNT_ID` at repository level (the preview job's `if` can only read repository variables); per environment `SUPABASE_PUBLISHABLE_KEY` (`supabase projects api-keys --project-ref <ref>`) and `APP_URL` (`https://prompt-hub-staging.<subdomain>.workers.dev`, `https://prompt-hub.<subdomain>.workers.dev`).
 
 ## One-time setup
@@ -62,6 +64,8 @@ GitHub variables: `CLOUDFLARE_ACCOUNT_ID` at repository level (the preview job's
 
 ## Rollback
 
+Tested on staging 2026-10-23: `wrangler rollback <previous version id> --env staging` switched 100% of traffic back in seconds; `/api/health` stayed up.
+
 Workers keep previous versions. List and roll back:
 
 ```bash
@@ -73,6 +77,10 @@ corepack pnpm --filter @prompt-hub/api exec wrangler rollback --env production
 ```
 
 `wrangler rollback <version-id>` targets a specific version. A rollback does not undo database migrations: migrations are written to be backward compatible with the previous Worker version (add columns, backfill, drop only in a later release).
+
+## Smoke test with a throwaway user
+
+`supabase projects api-keys --reveal --project-ref <ref>` gives the secret key (without `--reveal` it is masked and the admin API answers "Invalid API key"). New `sb_secret_` keys go only in the `apikey` header, not as `Authorization: Bearer`. Create a confirmed user via `POST /auth/v1/admin/users`, sign in through the Worker, call `/api/me`, sign out, delete the user. Never print the key.
 
 ## Rotate secrets
 

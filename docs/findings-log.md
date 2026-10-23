@@ -2,6 +2,14 @@
 
 Observations that are not decisions: measurements, surprises, things that did not work. Newest first, dated.
 
+## 2026-10-23 — First cloud environment (#21)
+
+- Supabase CLI `projects create` works non-interactively with `--org-id --region --db-password`; new projects sign JWTs with ES256 (JWKS), so the Worker's verification works unchanged.
+- `supabase config push` only pushes keys the config declares, so a minimal throwaway config is a safe way to change single settings; `config diff` previews exactly what changes. Right after a push, `diff` can briefly still show the old value.
+- `supabase projects api-keys` masks secret keys unless `--reveal`; the masked value gives "Invalid API key". `sb_secret_` keys work in the `apikey` header only.
+- gitleaks `generic-api-key` flags Supabase publishable keys; they now come from GitHub variables via `wrangler deploy --var`.
+- Staging smoke (sign-in → `/api/me` through Hyperdrive → sign-out) passed on the first deploy; one leftover `app_user` row from the deleted smoke user remains in staging.
+
 ## 2026-10-23 — Security baseline notes (#23)
 
 - **Primer React 38 runs under a strict CSP** (`style-src 'self'`, no `unsafe-inline`): no violations on the sign-in and reset screens. React `style` props are applied through the CSSOM, which `style-src` does not block; only the inline `<style>` in `index.html` had to move to a CSS file.
