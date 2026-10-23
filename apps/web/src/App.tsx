@@ -8,6 +8,8 @@ import { SignIn } from "./auth/SignIn";
 import { I18nProvider } from "./i18n";
 import { Dashboard } from "./pages/Dashboard";
 import { NotFound, Placeholder } from "./pages/Placeholder";
+import { ProjectPage } from "./pages/ProjectPage";
+import { PromptPage } from "./pages/PromptPage";
 import { Settings } from "./pages/Settings";
 import { usePathname } from "./router";
 import { Header } from "./shell/Header";
@@ -101,10 +103,22 @@ export function App() {
     );
   } else {
     let page: ReactNode;
-    if (route.name === "home") page = <Dashboard />;
+    if (route.name === "home") page = <Dashboard handle={me.handle} />;
     else if (route.name === "settings") page = <Settings me={me} onSave={savePrefs} />;
     else if (route.name === "notFound") page = <NotFound />;
-    else page = <Placeholder route={route} />;
+    else if (route.name === "project") {
+      page = <ProjectPage key={pathname} handle={route.handle} project={route.project} />;
+    } else if (route.name === "item" && route.path.length === 1 && route.path[0]) {
+      // Folders come later; a single segment after the project is a prompt.
+      page = (
+        <PromptPage
+          key={pathname}
+          handle={route.handle}
+          project={route.project}
+          prompt={route.path[0]}
+        />
+      );
+    } else page = <Placeholder route={route} />;
     content = (
       <>
         <Header

@@ -2,6 +2,14 @@
 
 Observations that are not decisions: measurements, surprises, things that did not work. Newest first, dated.
 
+## 2026-10-23 — Vertical slice UI notes (#41)
+
+- **The Windows clipboard turns `
+` into `
+`**: the copied prompt read back in the e2e on Windows/Edge had CRLF line ends. That is what users get when pasting on Windows and is fine; the test compares with normalised newlines.
+- Primer marks required fields with ` *` in the accessible name, so `getByLabel("Name", { exact: true })` misses them; use `getByLabel(/^Name/)`.
+- A browser logs every 4xx fetch as a console error, so e2e flows that must stay error-free should not request foreign resources on purpose (404 cases are tested at the API level).
+
 ## 2026-10-23 — Projects API notes (#40)
 
 - **Drizzle column refs in a raw `sql` subquery are unqualified**: `` sql`(select count(*) from ${prompt} where ${prompt.projectId} = ${project.id})` `` renders `"id"`, which inside the subquery means `prompt.id`, so every count was 0. Written with explicit `"table"."column"` names instead; caught by the API test.

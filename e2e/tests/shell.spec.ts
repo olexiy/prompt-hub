@@ -79,23 +79,31 @@ test("GitHub-like URLs render the shell with breadcrumbs; unknown paths say not 
   const errors = collectErrors(page);
   await signIn(page);
 
-  await page.goto("/olexiy/comfy-h3/shots/bus-stop-9s");
+  // An own project, created through the API as the page would.
+  const handle = await page.evaluate(async () => {
+    const me = (await (await fetch("/api/me")).json()) as { handle: string };
+    await fetch("/api/projects", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slug: "comfy-h3", name: "Comfy H3" }),
+    });
+    return me.handle;
+  });
+
+  // Folders come later: a deeper path is a placeholder inside the shell.
+  await page.goto(`/${handle}/comfy-h3/shots/bus-stop-9s`);
   await expect(page.getByRole("heading", { name: "Coming soon" })).toBeVisible();
   const crumb = page.getByRole("navigation", { name: "Breadcrumb" });
   if (await crumb.isVisible()) {
-    await expect(crumb.getByRole("link")).toHaveText([
-      "olexiy",
-      "comfy-h3",
-      "shots",
-      "bus-stop-9s",
-    ]);
+    await expect(crumb.getByRole("link")).toHaveText([handle, "comfy-h3", "shots", "bus-stop-9s"]);
     await crumb.getByRole("link", { name: "comfy-h3" }).click();
-    await expect(page).toHaveURL(/\/olexiy\/comfy-h3$/);
+    await expect(page).toHaveURL(new RegExp(`/${handle}/comfy-h3$`));
+    await expect(page.getByRole("heading", { name: "Prompts" })).toBeVisible();
   }
 
   await page.goto("/Not_A_Slug");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await page.getByRole("link", { name: "Go to your projects" }).click();
-  await expect(page.getByRole("heading", { name: "No projects yet" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Comfy H3" })).toBeVisible();
   expect(errors).toEqual([]);
 });

@@ -4,6 +4,7 @@ import {
   parseVariables,
   renderPrompt,
   syncDefinitions,
+  tokenizePrompt,
   variableDefsSchema,
 } from "./variables";
 
@@ -92,5 +93,26 @@ describe("definitions", () => {
     expect(variableDefsSchema.safeParse([{ name: "a" }, { name: "a" }]).success).toBe(false);
     expect(variableDefsSchema.safeParse([{ name: "a b" }]).success).toBe(false);
     expect(variableDefsSchema.safeParse([{ name: "a", type: "number" }]).success).toBe(false);
+  });
+});
+
+describe("tokenizePrompt", () => {
+  it("splits text and placeholders and joins back to the body", () => {
+    const body = "Hi {{ имя }}, {not} {{x}}{{x}} end";
+    const segments = tokenizePrompt(body);
+    expect(segments).toEqual([
+      { text: "Hi " },
+      { variable: "имя", placeholder: "{{ имя }}" },
+      { text: ", {not} " },
+      { variable: "x", placeholder: "{{x}}" },
+      { variable: "x", placeholder: "{{x}}" },
+      { text: " end" },
+    ]);
+    expect(segments.map((s) => ("text" in s ? s.text : s.placeholder)).join("")).toBe(body);
+  });
+
+  it("handles empty and placeholder-only bodies", () => {
+    expect(tokenizePrompt("")).toEqual([]);
+    expect(tokenizePrompt("{{a}}")).toEqual([{ variable: "a", placeholder: "{{a}}" }]);
   });
 });
