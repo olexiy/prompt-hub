@@ -1,21 +1,39 @@
 /**
- * /api/projects/* — projects and prompts of the signed-in user (vertical slice, #40).
+ * /api/projects/* — projects, folders and prompts of the signed-in user (#40, folders #48).
+ *
+ * Items are addressed by path like the web URLs: `/:handle/:project/path/<folder…>/<prompt>`.
+ * A folder and a prompt never share a slug in the same parent, so a path is unambiguous.
  *
  * Authorisation: every query is scoped by the signed-in owner. A `:handle` that is not the
- * signed-in user's, or a project/prompt they do not own, answers 404 — the same as "does not
- * exist", so nothing leaks. Public reads by other users come in Phase 4.
+ * signed-in user's, or a project/item they do not own, answers 404 — the same as "does not
+ * exist", so nothing leaks. Public reads by other users come with #53.
  */
 import {
+  folderCreateSchema,
+  isValidSlug,
+  itemPatchSchema,
+  MAX_ITEM_DEPTH,
   projectCreateSchema,
   promptCreateSchema,
   syncDefinitions,
-  type PromptDetail,
-  type ProjectDetail,
+  type FolderListing,
   type ProjectSummary,
-  type PromptSummary,
+  type PromptDetail,
   type Visibility,
 } from "@prompt-hub/core";
-import { and, asc, desc, eq, isNull, project, prompt, promptVersion, sql } from "@prompt-hub/db";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  folder,
+  isNull,
+  project,
+  prompt,
+  promptVersion,
+  sql,
+  type Db,
+} from "@prompt-hub/db";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import type { AppEnv } from "../app-env";
@@ -31,6 +49,8 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 const notFound = (c: Context<AppEnv>) => c.json({ error: "Not found" }, 404);
+const nameTaken = (c: Context<AppEnv>) =>
+  c.json({ error: "This folder already has a prompt or folder with this URL slug" }, 409);
 
 /** Variable definitions without undefined keys: what we store and return (typed variables later). */
 function cleanDefs(
@@ -57,14 +77,17 @@ const summaryColumns = {
   updatedAt: project.updatedAt,
 };
 
-function toSummary(row: {
+type ProjectRow = {
+  id: string;
   slug: string;
   name: string;
   description: string;
   visibility: string;
   promptCount: number;
   updatedAt: Date;
-}): ProjectSummary {
+};
+
+function toSummary(row: Omit<ProjectRow, "id">): ProjectSummary {
   return {
     slug: row.slug,
     name: row.name,
@@ -76,7 +99,7 @@ function toSummary(row: {
 }
 
 /** The signed-in user's project named in the URL, or null (wrong handle, missing, not theirs). */
-async function ownProject(c: Context<AppEnv>) {
+async function ownProject(c: Context<AppEnv>): Promise<ProjectRow | null> {
   const user = c.get("user");
   if (c.req.param("handle") !== user.handle) return null;
   const [row] = await c
@@ -86,6 +109,139 @@ async function ownProject(c: Context<AppEnv>) {
     .where(and(eq(project.ownerId, user.id), eq(project.slug, c.req.param("project") ?? "")));
   return row ?? null;
 }
+
+/** Segments after `/path/`; null when any segment is not a slug or the path is too deep. */
+function pathSegments(c: Context<AppEnv>): string[] | null {
+  const marker = "/path";
+  const raw = c.req.path.slice(c.req.path.indexOf(marker) + marker.length);
+  const segments = raw.split("/").filter((s) => s !== "");
+  if (segments.length > MAX_ITEM_DEPTH || !segments.every(isValidSlug)) return null;
+  return segments;
+}
+
+const parentIs = (parentId: string | null) =>
+  parentId === null ? isNull(folder.parentId) : eq(folder.parentId, parentId);
+const inFolder = (folderId: string | null) =>
+  folderId === null ? isNull(prompt.folderId) : eq(prompt.folderId, folderId);
+
+/** Folder id for a folder path (null = project root), or undefined when it does not exist. */
+async function findFolder(
+  db: Db,
+  projectId: string,
+  path: readonly string[],
+): Promise<{ id: string | null; name: string | null } | undefined> {
+  let current: { id: string | null; name: string | null } = { id: null, name: null };
+  for (const slug of path) {
+    const [row] = await db
+      .select({ id: folder.id, name: folder.name })
+      .from(folder)
+      .where(and(eq(folder.projectId, projectId), parentIs(current.id), eq(folder.slug, slug)));
+    if (!row) return undefined;
+    current = row;
+  }
+  return current;
+}
+
+async function slugUsedByFolder(db: Db, projectId: string, parentId: string | null, slug: string) {
+  const rows = await db
+    .select({ id: folder.id })
+    .from(folder)
+    .where(and(eq(folder.projectId, projectId), parentIs(parentId), eq(folder.slug, slug)));
+  return rows.length > 0;
+}
+
+async function slugUsedByPrompt(db: Db, projectId: string, folderId: string | null, slug: string) {
+  const rows = await db
+    .select({ id: prompt.id })
+    .from(prompt)
+    .where(and(eq(prompt.projectId, projectId), inFolder(folderId), eq(prompt.slug, slug)));
+  return rows.length > 0;
+}
+
+async function listing(
+  c: Context<AppEnv>,
+  proj: ProjectRow,
+  path: string[],
+  dir: { id: string | null; name: string | null },
+): Promise<FolderListing> {
+  const db = c.get("db");
+  const [folders, prompts] = await Promise.all([
+    db
+      .select({ slug: folder.slug, name: folder.name })
+      .from(folder)
+      .where(and(eq(folder.projectId, proj.id), parentIs(dir.id)))
+      .orderBy(asc(folder.name)),
+    db
+      .select({ slug: prompt.slug, title: prompt.title, updatedAt: prompt.updatedAt })
+      .from(prompt)
+      .where(and(eq(prompt.projectId, proj.id), inFolder(dir.id)))
+      .orderBy(asc(prompt.title)),
+  ]);
+  return {
+    kind: "folder",
+    project: toSummary(proj),
+    owner: c.get("user").handle,
+    path,
+    name: dir.name ?? proj.name,
+    folders,
+    prompts: prompts.map((p) => ({ ...p, updatedAt: p.updatedAt.toISOString() })),
+  };
+}
+
+/** The prompt at `folderPath/slug` with its current version, or null. */
+async function promptAt(db: Db, projectId: string, folderId: string | null, slug: string) {
+  const [row] = await db
+    .select({
+      id: prompt.id,
+      slug: prompt.slug,
+      title: prompt.title,
+      updatedAt: prompt.updatedAt,
+      number: promptVersion.number,
+      body: promptVersion.body,
+      variables: promptVersion.variables,
+      createdAt: promptVersion.createdAt,
+    })
+    .from(prompt)
+    .innerJoin(promptVersion, eq(promptVersion.id, prompt.currentVersionId))
+    .where(and(eq(prompt.projectId, projectId), inFolder(folderId), eq(prompt.slug, slug)));
+  return row ?? null;
+}
+
+function toPromptDetail(
+  row: NonNullable<Awaited<ReturnType<typeof promptAt>>>,
+  folderPath: string[],
+): PromptDetail {
+  return {
+    kind: "prompt",
+    folder: folderPath,
+    slug: row.slug,
+    title: row.title,
+    updatedAt: row.updatedAt.toISOString(),
+    version: {
+      number: row.number,
+      body: row.body,
+      variables: cleanDefs(row.variables),
+      createdAt: row.createdAt.toISOString(),
+    },
+  };
+}
+
+/** What a path points at: a folder (also the root) or a prompt. */
+async function resolve(c: Context<AppEnv>, proj: ProjectRow, path: string[]) {
+  const db = c.get("db");
+  const dir = await findFolder(db, proj.id, path);
+  if (dir) return { kind: "folder" as const, path, dir };
+  const parentPath = path.slice(0, -1);
+  const slug = path.at(-1);
+  const parent = await findFolder(db, proj.id, parentPath);
+  if (!parent || !slug) return null;
+  const row = await promptAt(db, proj.id, parent.id, slug);
+  return row ? { kind: "prompt" as const, parentPath, parentId: parent.id, row } : null;
+}
+
+/** Marks the project as changed; takes the db or a transaction. */
+const touchProject = (db: Pick<Db, "update">, projectId: string) =>
+  db.update(project).set({ updatedAt: new Date() }).where(eq(project.id, projectId));
 
 export const projectRoutes = new Hono<AppEnv>()
   .use("*", requireUser)
@@ -118,30 +274,84 @@ export const projectRoutes = new Hono<AppEnv>()
   .get("/:handle/:project", async (c) => {
     const proj = await ownProject(c);
     if (!proj) return notFound(c);
-    const prompts = await c
+    return c.json(await listing(c, proj, [], { id: null, name: null }));
+  })
+  .get("/:handle/:project/path/*", async (c) => {
+    const proj = await ownProject(c);
+    const path = pathSegments(c);
+    if (!proj || !path) return notFound(c);
+    const item = await resolve(c, proj, path);
+    if (!item) return notFound(c);
+    return c.json(
+      item.kind === "folder"
+        ? await listing(c, proj, path, item.dir)
+        : toPromptDetail(item.row, item.parentPath),
+    );
+  })
+  .get("/:handle/:project/folders", async (c) => {
+    // Every folder as a path, for "move to" pickers; built in memory (projects are small).
+    const proj = await ownProject(c);
+    if (!proj) return notFound(c);
+    const rows = await c
       .get("db")
-      .select({ slug: prompt.slug, title: prompt.title, updatedAt: prompt.updatedAt })
-      .from(prompt)
-      .where(eq(prompt.projectId, proj.id))
-      .orderBy(asc(prompt.title));
-    const detail: ProjectDetail = {
-      ...toSummary(proj),
-      owner: c.get("user").handle,
-      prompts: prompts.map((p): PromptSummary => ({ ...p, updatedAt: p.updatedAt.toISOString() })),
+      .select({ id: folder.id, parentId: folder.parentId, slug: folder.slug, name: folder.name })
+      .from(folder)
+      .where(eq(folder.projectId, proj.id));
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const pathOf = (r: (typeof rows)[number]): string[] => {
+      const parent = r.parentId ? byId.get(r.parentId) : undefined;
+      return parent ? [...pathOf(parent), r.slug] : [r.slug];
     };
-    return c.json(detail);
+    const folders = rows
+      .map((r) => ({ path: pathOf(r), name: r.name }))
+      .sort((a, b) => a.path.join("/").localeCompare(b.path.join("/")));
+    return c.json({ folders });
+  })
+  .post("/:handle/:project/folders", async (c) => {
+    const proj = await ownProject(c);
+    if (!proj) return notFound(c);
+    const input = await parseJson(c, folderCreateSchema, "Check the folder name and URL slug");
+    const db = c.get("db");
+    const parent = await findFolder(db, proj.id, input.parent);
+    if (!parent) return notFound(c);
+    if (input.parent.length + 1 >= MAX_ITEM_DEPTH) {
+      return c.json({ error: "Folders cannot be nested deeper" }, 400);
+    }
+    if (await slugUsedByPrompt(db, proj.id, parent.id, input.slug)) return nameTaken(c);
+    try {
+      await db
+        .insert(folder)
+        .values({ projectId: proj.id, parentId: parent.id, slug: input.slug, name: input.name });
+    } catch (err) {
+      if (isUniqueViolation(err)) return nameTaken(c);
+      throw err;
+    }
+    await touchProject(db, proj.id);
+    const path = [...input.parent, input.slug];
+    const dir = await findFolder(db, proj.id, path);
+    if (!dir) throw new Error("folder missing after insert");
+    return c.json(await listing(c, proj, path, dir), 201);
   })
   .post("/:handle/:project/prompts", async (c) => {
     const proj = await ownProject(c);
     if (!proj) return notFound(c);
     const input = await parseJson(c, promptCreateSchema, "Check the title, URL slug and text");
+    const db = c.get("db");
+    const parent = await findFolder(db, proj.id, input.folder);
+    if (!parent) return notFound(c);
+    if (await slugUsedByFolder(db, proj.id, parent.id, input.slug)) return nameTaken(c);
     const variables = cleanDefs(syncDefinitions(input.body, input.variables));
     const userId = c.get("user").id;
     try {
-      const created = await c.get("db").transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         const [p] = await tx
           .insert(prompt)
-          .values({ projectId: proj.id, slug: input.slug, title: input.title })
+          .values({
+            projectId: proj.id,
+            folderId: parent.id,
+            slug: input.slug,
+            title: input.title,
+          })
           .returning();
         if (!p) throw new Error("prompt insert returned nothing");
         const [v] = await tx
@@ -150,56 +360,56 @@ export const projectRoutes = new Hono<AppEnv>()
           .returning();
         if (!v) throw new Error("version insert returned nothing");
         await tx.update(prompt).set({ currentVersionId: v.id }).where(eq(prompt.id, p.id));
-        await tx.update(project).set({ updatedAt: new Date() }).where(eq(project.id, proj.id));
-        return { p, v };
+        await touchProject(tx, proj.id);
       });
-      const detail: PromptDetail = {
-        slug: created.p.slug,
-        title: created.p.title,
-        updatedAt: created.p.updatedAt.toISOString(),
-        version: {
-          number: created.v.number,
-          body: created.v.body,
-          variables,
-          createdAt: created.v.createdAt.toISOString(),
-        },
-      };
-      return c.json(detail, 201);
     } catch (err) {
-      if (isUniqueViolation(err)) {
-        return c.json({ error: "This project already has a prompt with this URL slug" }, 409);
-      }
+      if (isUniqueViolation(err)) return nameTaken(c);
       throw err;
     }
+    const row = await promptAt(db, proj.id, parent.id, input.slug);
+    if (!row) throw new Error("prompt missing after insert");
+    return c.json(toPromptDetail(row, input.folder), 201);
   })
-  .get("/:handle/:project/prompts/:prompt", async (c) => {
+  .patch("/:handle/:project/path/*", async (c) => {
     const proj = await ownProject(c);
-    if (!proj) return notFound(c);
-    const [row] = await c
-      .get("db")
-      .select({
-        slug: prompt.slug,
-        title: prompt.title,
-        updatedAt: prompt.updatedAt,
-        number: promptVersion.number,
-        body: promptVersion.body,
-        variables: promptVersion.variables,
-        createdAt: promptVersion.createdAt,
-      })
-      .from(prompt)
-      .innerJoin(promptVersion, eq(promptVersion.id, prompt.currentVersionId))
-      .where(and(eq(prompt.projectId, proj.id), eq(prompt.slug, c.req.param("prompt"))));
-    if (!row) return notFound(c);
-    const detail: PromptDetail = {
-      slug: row.slug,
-      title: row.title,
-      updatedAt: row.updatedAt.toISOString(),
-      version: {
-        number: row.number,
-        body: row.body,
-        variables: cleanDefs(row.variables),
-        createdAt: row.createdAt.toISOString(),
-      },
-    };
-    return c.json(detail);
+    const path = pathSegments(c);
+    if (!proj || !path || path.length === 0) return notFound(c);
+    const change = await parseJson(c, itemPatchSchema, "Invalid change");
+    const db = c.get("db");
+    const item = await resolve(c, proj, path);
+    if (!item) return notFound(c);
+
+    if (item.kind === "folder" && change.name !== undefined && item.dir.id) {
+      await db.update(folder).set({ name: change.name }).where(eq(folder.id, item.dir.id));
+      return c.json(await listing(c, proj, path, { ...item.dir, name: change.name }));
+    }
+    if (item.kind === "prompt" && change.to !== undefined) {
+      const target = await findFolder(db, proj.id, change.to);
+      if (!target) return notFound(c);
+      if (await slugUsedByFolder(db, proj.id, target.id, item.row.slug)) return nameTaken(c);
+      try {
+        await db.update(prompt).set({ folderId: target.id }).where(eq(prompt.id, item.row.id));
+      } catch (err) {
+        if (isUniqueViolation(err)) return nameTaken(c);
+        throw err;
+      }
+      return c.json(toPromptDetail(item.row, change.to));
+    }
+    return c.json({ error: "Invalid change" }, 400);
+  })
+  .delete("/:handle/:project/path/*", async (c) => {
+    const proj = await ownProject(c);
+    const path = pathSegments(c);
+    if (!proj || !path || path.length === 0) return notFound(c);
+    const db = c.get("db");
+    const item = await resolve(c, proj, path);
+    if (!item) return notFound(c);
+    // Deletes are final (feature 15); folders take their subfolders and prompts with them.
+    if (item.kind === "folder" && item.dir.id) {
+      await db.delete(folder).where(eq(folder.id, item.dir.id));
+    } else if (item.kind === "prompt") {
+      await db.delete(prompt).where(eq(prompt.id, item.row.id));
+    }
+    await touchProject(db, proj.id);
+    return c.body(null, 204);
   });

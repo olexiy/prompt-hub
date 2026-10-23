@@ -91,6 +91,20 @@ export const en = {
   "prompt.copied": "Copied to the clipboard",
   "prompt.copyFailed": "Could not copy. Select the text and copy it by hand.",
   "error.load": "Could not load. Try again.",
+  "folder.new": "New folder",
+  "folder.rename": "Rename",
+  "folder.save": "Save",
+  "folder.delete": "Delete folder",
+  "folder.confirmDelete":
+    "Delete the folder “{name}” with everything inside? This cannot be undone.",
+  "folder.empty": "This folder is empty.",
+  "item.delete": "Delete",
+  "item.cancel": "Cancel",
+  "prompt.move": "Move",
+  "prompt.root": "Project root",
+  "prompt.delete": "Delete prompt",
+  "prompt.confirmDelete":
+    "Delete the prompt “{name}” with all its versions? This cannot be undone.",
 } as const;
 
 export type MessageKey = keyof typeof en;

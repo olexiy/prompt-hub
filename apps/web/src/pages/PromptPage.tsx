@@ -1,10 +1,20 @@
 import { renderPrompt, tokenizePrompt, type PromptDetail } from "@prompt-hub/core";
-import { AlertIcon, CopyIcon } from "@primer/octicons-react";
-import { Button, FormControl, Heading, Label, Spinner, TextInput } from "@primer/react";
+import { AlertIcon, CopyIcon, FileDirectoryIcon, TrashIcon } from "@primer/octicons-react";
+import {
+  ActionList,
+  ActionMenu,
+  Button,
+  FormControl,
+  Heading,
+  Label,
+  TextInput,
+  useConfirm,
+} from "@primer/react";
 import { useState } from "react";
 import { useI18n } from "../i18n";
+import { del, patch } from "../api";
+import { navigate } from "../router";
 import { useApi } from "../useApi";
-import { NotFound } from "./Placeholder";
 
 /**
  * `/{handle}/{project}/{prompt}` (mockup: prompt): the body with variables filled in as you
@@ -14,28 +24,40 @@ import { NotFound } from "./Placeholder";
 export function PromptPage({
   handle,
   project,
-  prompt,
+  detail,
 }: {
   handle: string;
   project: string;
-  prompt: string;
+  detail: PromptDetail;
 }) {
   const { t } = useI18n();
-  const loaded = useApi<PromptDetail>(`/api/projects/${handle}/${project}/prompts/${prompt}`);
+  const confirm = useConfirm();
   const [values, setValues] = useState<Record<string, string>>({});
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const api = `/api/projects/${handle}/${project}`;
+  const itemPath = [...detail.folder, detail.slug].join("/");
+  // Folder list for "Move", loaded once per prompt page.
+  const [folders] = useApi<{ folders: { path: string[]; name: string }[] }>(`${api}/folders`);
 
-  if (loaded.state === "loading") {
-    return (
-      <div className="ph-center">
-        <Spinner />
-      </div>
-    );
+  async function moveTo(to: string[]) {
+    await patch(`${api}/path/${itemPath}`, { to });
+    navigate(["", handle, project, ...to, detail.slug].join("/"));
   }
-  if (loaded.state === "notFound") return <NotFound />;
-  if (loaded.state === "error") return <p className="ph-muted">{t("error.load")}</p>;
 
-  const { title, version } = loaded.data;
+  async function remove() {
+    const ok = await confirm({
+      title: t("prompt.delete"),
+      content: t("prompt.confirmDelete", { name: detail.title }),
+      confirmButtonContent: t("item.delete"),
+      cancelButtonContent: t("item.cancel"),
+      confirmButtonType: "danger",
+    });
+    if (!ok) return;
+    await del(`${api}/path/${itemPath}`);
+    navigate(["", handle, project, ...detail.folder].join("/"));
+  }
+
+  const { title, version } = detail;
   const defs = version.variables;
   const defaults = new Map(defs.map((d) => [d.name, d.default]));
   const { text, unfilled } = renderPrompt(version.body, values, defs);
@@ -51,9 +73,40 @@ export function PromptPage({
 
   return (
     <div className="ph-stack">
-      <Heading as="h1" className="ph-h3 ph-title">
-        {title}
-      </Heading>
+      <div className="ph-toolbar">
+        <Heading as="h1" className="ph-h3 ph-title ph-grow">
+          {title}
+        </Heading>
+        <ActionMenu>
+          <ActionMenu.Button size="small" leadingVisual={FileDirectoryIcon}>
+            {t("prompt.move")}
+          </ActionMenu.Button>
+          <ActionMenu.Overlay>
+            <ActionList selectionVariant="single">
+              {[
+                { path: [] as string[], name: t("prompt.root") },
+                ...(folders.state === "ok" ? folders.data.folders : []),
+              ].map((f) => (
+                <ActionList.Item
+                  key={f.path.join("/")}
+                  selected={f.path.join("/") === detail.folder.join("/")}
+                  onSelect={() => void moveTo(f.path)}
+                >
+                  {f.path.length === 0 ? f.name : `${f.path.join("/")}/`}
+                </ActionList.Item>
+              ))}
+            </ActionList>
+          </ActionMenu.Overlay>
+        </ActionMenu>
+        <Button
+          size="small"
+          variant="danger"
+          leadingVisual={TrashIcon}
+          onClick={() => void remove()}
+        >
+          {t("item.delete")}
+        </Button>
+      </div>
       <div className="ph-prompt">
         <div className="ph-box ph-main-col">
           <div className="ph-box-head">

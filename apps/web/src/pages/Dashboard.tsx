@@ -10,7 +10,7 @@ import { CreateForm } from "./CreateForm";
 /** Projects overview (mockup: dashboard): own projects, newest first, and "New project". */
 export function Dashboard({ handle }: { handle: string }) {
   const { t, locale } = useI18n();
-  const loaded = useApi<{ projects: ProjectSummary[] }>("/api/projects");
+  const [loaded] = useApi<{ projects: ProjectSummary[] }>("/api/projects");
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("");
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
