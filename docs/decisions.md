@@ -2,6 +2,21 @@
 
 Newest first. Format: date — decision. *Why.* Alternatives considered.
 
+## 2026-10-23 — ADR: TypeScript end to end on Cloudflare Workers (#4)
+Frontend React 19 + Primer React, backend Hono on Cloudflare Workers, one Worker serves UI and `/api`, shared Zod schemas and variable renderer in `packages/core`. *Why:* Olexiy left the stack to Claude with security first and €0; Workers have no server/OS/container to patch, no cold starts on the free plan, one language and one dependency tree, and Primer React gives GitHub's real components. Alternatives: Spring Boot 4.1 native on Google Cloud Run + Angular 22 (revision 1: third vendor, native-image build complexity, two supply chains); Supabase-only with Edge Functions + RLS (logic split, hard to test); Hetzner server (own OS patching, shared with other people's sites).
+
+## 2026-10-23 — ADR: Supabase for Postgres and Auth, via Hyperdrive
+Supabase Free in the EU: Postgres (prod + staging projects) and Auth; Drizzle ORM with SQL migrations; the Worker is the only data path (Data API disabled, service key server-side only). *Why:* managed Postgres + auth in one free project, no passwords stored by us, invites and TOTP built in; a 7-day idle pause is acceptable. Alternatives: Neon (no auth), Cloudflare D1 (SQLite, weaker search and JSON), own auth (more to secure).
+
+## 2026-10-23 — ADR: Security standard OWASP ASVS 5.0 Level 2
+Controls from the MVP: invite-only sign-up, Turnstile, HttpOnly cookie sessions, JWT verification via JWKS, server-side authorisation per request with "other user → 404" tests, Zod validation, strict CSP and security headers, rate limiting, secrets only in Wrangler/GitHub secrets, nightly backups. Supply chain: pnpm release-age gate and blocked install scripts, Dependabot, SHA-pinned actions, no `pull_request_target`, gitleaks, OSV-Scanner, Semgrep; daily scheduled scans; `/security-review` before production deploys touching auth or input. *Why:* Olexiy treats security as a top priority given AI-assisted attacks; npm worm waves in 2025–2026.
+
+## 2026-10-23 — ADR: Monorepo, modular monolith, CI/CD
+pnpm workspaces (`apps/web`, `apps/api`, `packages/core`, `packages/db`, `e2e`); no microservices. CI on pull requests only; preview deploys to staging per PR; production deploy by manual dispatch after Olexiy's go. *Why:* one deployable is the smallest attack surface and least ops at this scale; process rules from DEV_PROCESS.md.
+
+## 2026-10-23 — Budget €0/month
+Free tiers only for now; sleeping DB acceptable. Accounts (Cloudflare, Supabase) are created by Olexiy.
+
 ## 2026-10-23 — Feature catalogue and product shape (#3)
 Agreed in a brainstorm with Olexiy ([FEATURES.md](FEATURES.md)): project → optional folders → independent prompts → versions created by a button; history visible only to the author; deletes are final everywhere (no trash; project delete asks for its name); no branches, variants or shared blocks; public projects show and fork only latest versions, visitors comment and star; invite-only registration; no integrations (copy & paste); EN/RU/DE UI. *Why:* keep the core simple and personal first; complexity (block prompts, AI) comes in later versions. Alternatives: Git-style branches (PromptHub), trash with 30-day restore, collaborators with roles — rejected.
 

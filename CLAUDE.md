@@ -24,7 +24,7 @@ No code yet. Phase 0 decides **whether** to build (market scan), **what** to bui
 - **Feature discussion is a dialogue:** present the catalogue in batches with a recommendation per item (must / should / could / won't for v1) and let Olexiy decide; don't settle v1 scope alone.
 
 ## Stack
-Not decided. Chosen in the architecture task of Phase 0 (web-search current stable versions first). Olexiy's home ground is Java/Spring Boot + Angular + Kubernetes; other stacks are fine if the trade-off is argued.
+TypeScript end to end (decided 2026-10-23, #4): React 19 + Primer React (Vite) and a Hono API in one Cloudflare Worker; Supabase Postgres + Auth (EU) via Hyperdrive, Drizzle ORM; R2 for files from v1; pnpm monorepo `apps/web`, `apps/api`, `packages/core`, `packages/db`, `e2e`. Security standard OWASP ASVS 5.0 L2. Details: `docs/research/architecture.md`, ADRs in `docs/decisions.md`. Web-search current stable versions before adding or upgrading anything; respect the pnpm release-age gate.
 
 ## Commands
 Filled by the Phase 1 skeleton task: run, test, lint, format, build, e2e.
