@@ -2,6 +2,12 @@
 
 Observations that are not decisions: measurements, surprises, things that did not work. Newest first, dated.
 
+## 2026-10-23 — Projects API notes (#40)
+
+- **Drizzle column refs in a raw `sql` subquery are unqualified**: `` sql`(select count(*) from ${prompt} where ${prompt.projectId} = ${project.id})` `` renders `"id"`, which inside the subquery means `prompt.id`, so every count was 0. Written with explicit `"table"."column"` names instead; caught by the API test.
+- Drizzle wraps Postgres errors; the unique-violation code `23505` sits on `err.cause`, so 409 detection walks the cause chain.
+- Tests that need state of their own use `withNewUser` (`apps/api/test/helpers.ts`), which creates and deletes a Supabase user per test; the shared suite user keeps its defaults for files running in parallel.
+
 ## 2026-10-23 — App shell notes (#24)
 
 - **No router or i18n library needed** at this size: `useSyncExternalStore` over `popstate` plus a typed message catalog (TypeScript enforces every key in en/ru/de) cover routing and translations; URL parsing lives in `packages/core` with unit tests.
