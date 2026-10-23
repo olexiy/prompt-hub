@@ -105,6 +105,20 @@ export const en = {
   "prompt.delete": "Delete prompt",
   "prompt.confirmDelete":
     "Delete the prompt “{name}” with all its versions? This cannot be undone.",
+  "prompt.edit": "Edit",
+  "prompt.history": "History",
+  "prompt.saveVersion": "Save as new version",
+  "prompt.message": "What changed (optional)",
+  "prompt.defaultLabel": "Default",
+  "prompt.descriptionLabel": "Description",
+  "history.onlyYou": "Only you see the history.",
+  "history.noMessage": "no message",
+  "history.view": "View",
+  "history.hide": "Hide",
+  "history.restore": "Restore",
+  "history.delete": "Delete version",
+  "history.deleteN": "Delete v{n}",
+  "history.confirmDelete": "Delete v{n} for good? This cannot be undone.",
 } as const;
 
 export type MessageKey = keyof typeof en;

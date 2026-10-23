@@ -37,6 +37,6 @@ export function ItemPage({
   return loaded.data.kind === "folder" ? (
     <FolderView listing={loaded.data} onChanged={reload} />
   ) : (
-    <PromptPage handle={handle} project={project} detail={loaded.data} />
+    <PromptPage handle={handle} project={project} detail={loaded.data} onChanged={reload} />
   );
 }

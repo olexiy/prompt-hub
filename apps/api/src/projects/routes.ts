@@ -16,9 +16,12 @@ import {
   projectCreateSchema,
   promptCreateSchema,
   syncDefinitions,
+  versionCreateSchema,
   type FolderListing,
   type ProjectSummary,
   type PromptDetail,
+  type VersionDetail,
+  type VersionSummary,
   type Visibility,
 } from "@prompt-hub/core";
 import {
@@ -28,6 +31,7 @@ import {
   eq,
   folder,
   isNull,
+  ne,
   project,
   prompt,
   promptVersion,
@@ -110,10 +114,15 @@ async function ownProject(c: Context<AppEnv>): Promise<ProjectRow | null> {
   return row ?? null;
 }
 
-/** Segments after `/path/`; null when any segment is not a slug or the path is too deep. */
-function pathSegments(c: Context<AppEnv>): string[] | null {
-  const marker = "/path";
-  const raw = c.req.path.slice(c.req.path.indexOf(marker) + marker.length);
+/**
+ * Segments after `/<marker>/` (`path` or `versions`) behind the project slug; null when a segment
+ * is not a slug or the path is too deep.
+ */
+function pathSegments(c: Context<AppEnv>, marker = "/path"): string[] | null {
+  const projectAt = c.req.path.indexOf(`/${c.req.param("project") ?? ""}/`);
+  const start = c.req.path.indexOf(`${marker}/`, projectAt);
+  if (projectAt < 0 || start < 0) return null;
+  const raw = c.req.path.slice(start + marker.length);
   const segments = raw.split("/").filter((s) => s !== "");
   if (segments.length > MAX_ITEM_DEPTH || !segments.every(isValidSlug)) return null;
   return segments;
@@ -188,6 +197,9 @@ async function listing(
   };
 }
 
+// Explicit names for the same reason as promptCount.
+const versionCount = sql<number>`(select count(*)::int from "prompt_version" where "prompt_version"."prompt_id" = "prompt"."id")`;
+
 /** The prompt at `folderPath/slug` with its current version, or null. */
 async function promptAt(db: Db, projectId: string, folderId: string | null, slug: string) {
   const [row] = await db
@@ -196,10 +208,13 @@ async function promptAt(db: Db, projectId: string, folderId: string | null, slug
       slug: prompt.slug,
       title: prompt.title,
       updatedAt: prompt.updatedAt,
+      versionId: promptVersion.id,
       number: promptVersion.number,
       body: promptVersion.body,
       variables: promptVersion.variables,
+      message: promptVersion.message,
       createdAt: promptVersion.createdAt,
+      versionCount,
     })
     .from(prompt)
     .innerJoin(promptVersion, eq(promptVersion.id, prompt.currentVersionId))
@@ -217,10 +232,12 @@ function toPromptDetail(
     slug: row.slug,
     title: row.title,
     updatedAt: row.updatedAt.toISOString(),
+    versionCount: row.versionCount,
     version: {
       number: row.number,
       body: row.body,
       variables: cleanDefs(row.variables),
+      message: row.message,
       createdAt: row.createdAt.toISOString(),
     },
   };
@@ -240,6 +257,15 @@ async function resolve(c: Context<AppEnv>, proj: ProjectRow, path: string[]) {
 }
 
 /** Marks the project as changed; takes the db or a transaction. */
+/** The prompt a `/versions/<path>` URL names, or null (also for folders). */
+async function versionedPrompt(c: Context<AppEnv>) {
+  const proj = await ownProject(c);
+  const path = pathSegments(c, "/versions");
+  if (!proj || !path || path.length === 0) return null;
+  const item = await resolve(c, proj, path);
+  return item?.kind === "prompt" ? { proj, item } : null;
+}
+
 const touchProject = (db: Pick<Db, "update">, projectId: string) =>
   db.update(project).set({ updatedAt: new Date() }).where(eq(project.id, projectId));
 
@@ -351,6 +377,7 @@ export const projectRoutes = new Hono<AppEnv>()
             folderId: parent.id,
             slug: input.slug,
             title: input.title,
+            lastVersionNumber: 1,
           })
           .returning();
         if (!p) throw new Error("prompt insert returned nothing");
@@ -395,6 +422,20 @@ export const projectRoutes = new Hono<AppEnv>()
       }
       return c.json(toPromptDetail(item.row, change.to));
     }
+    if (item.kind === "prompt" && change.title !== undefined) {
+      await db.update(prompt).set({ title: change.title }).where(eq(prompt.id, item.row.id));
+      return c.json(toPromptDetail({ ...item.row, title: change.title }, item.parentPath));
+    }
+    if (item.kind === "prompt" && change.slug !== undefined) {
+      if (await slugUsedByFolder(db, proj.id, item.parentId, change.slug)) return nameTaken(c);
+      try {
+        await db.update(prompt).set({ slug: change.slug }).where(eq(prompt.id, item.row.id));
+      } catch (err) {
+        if (isUniqueViolation(err)) return nameTaken(c);
+        throw err;
+      }
+      return c.json(toPromptDetail({ ...item.row, slug: change.slug }, item.parentPath));
+    }
     return c.json({ error: "Invalid change" }, 400);
   })
   .delete("/:handle/:project/path/*", async (c) => {
@@ -411,5 +452,145 @@ export const projectRoutes = new Hono<AppEnv>()
       await db.delete(prompt).where(eq(prompt.id, item.row.id));
     }
     await touchProject(db, proj.id);
+    return c.body(null, 204);
+  })
+  .get("/:handle/:project/versions/*", async (c) => {
+    // `?n=` reads one version; otherwise the history, newest first.
+    const found = await versionedPrompt(c);
+    if (!found) return notFound(c);
+    const db = c.get("db");
+    const n = c.req.query("n");
+    if (n !== undefined) {
+      const number = Number(n);
+      if (!Number.isInteger(number) || number < 1) return notFound(c);
+      const [v] = await db
+        .select()
+        .from(promptVersion)
+        .where(
+          and(eq(promptVersion.promptId, found.item.row.id), eq(promptVersion.number, number)),
+        );
+      if (!v) return notFound(c);
+      const detail: VersionDetail = {
+        number: v.number,
+        body: v.body,
+        variables: cleanDefs(v.variables),
+        message: v.message,
+        createdAt: v.createdAt.toISOString(),
+      };
+      return c.json(detail);
+    }
+    const rows = await db
+      .select({
+        id: promptVersion.id,
+        number: promptVersion.number,
+        message: promptVersion.message,
+        createdAt: promptVersion.createdAt,
+      })
+      .from(promptVersion)
+      .where(eq(promptVersion.promptId, found.item.row.id))
+      .orderBy(desc(promptVersion.number));
+    const versions: VersionSummary[] = rows.map((r) => ({
+      number: r.number,
+      message: r.message,
+      createdAt: r.createdAt.toISOString(),
+      current: r.id === found.item.row.versionId,
+    }));
+    return c.json({ versions });
+  })
+  .post("/:handle/:project/versions/*", async (c) => {
+    // A new current version: the edited state, or an old version restored as the newest.
+    const found = await versionedPrompt(c);
+    if (!found) return notFound(c);
+    const input = await parseJson(c, versionCreateSchema, "Check the prompt text and variables");
+    const db = c.get("db");
+    const promptId = found.item.row.id;
+    let content: { body: string; variables: ReturnType<typeof cleanDefs>; message: string };
+    if ("restore" in input) {
+      const [old] = await db
+        .select()
+        .from(promptVersion)
+        .where(and(eq(promptVersion.promptId, promptId), eq(promptVersion.number, input.restore)));
+      if (!old) return notFound(c);
+      content = {
+        body: old.body,
+        variables: cleanDefs(old.variables),
+        message: `Restored v${String(old.number)}`,
+      };
+    } else {
+      content = {
+        body: input.body,
+        variables: cleanDefs(syncDefinitions(input.body, input.variables)),
+        message: input.message,
+      };
+    }
+    try {
+      await db.transaction(async (tx) => {
+        // The counter on the prompt row hands out numbers: never reused after deletes, and the
+        // row lock serialises two saves of the same prompt.
+        const [counter] = await tx
+          .update(prompt)
+          .set({ lastVersionNumber: sql`${prompt.lastVersionNumber} + 1` })
+          .where(eq(prompt.id, promptId))
+          .returning({ n: prompt.lastVersionNumber });
+        if (!counter) throw new Error("prompt missing while saving");
+        const [v] = await tx
+          .insert(promptVersion)
+          .values({
+            promptId,
+            number: counter.n,
+            ...content,
+            createdBy: c.get("user").id,
+          })
+          .returning({ id: promptVersion.id });
+        if (!v) throw new Error("version insert returned nothing");
+        await tx
+          .update(prompt)
+          .set({ currentVersionId: v.id, updatedAt: new Date() })
+          .where(eq(prompt.id, promptId));
+        await touchProject(tx, found.proj.id);
+      });
+    } catch (err) {
+      // Two saves at the same moment picked the same number.
+      if (isUniqueViolation(err)) {
+        return c.json({ error: "Saved at the same time elsewhere. Reload and try again." }, 409);
+      }
+      throw err;
+    }
+    const row = await promptAt(db, found.proj.id, found.item.parentId, found.item.row.slug);
+    if (!row) throw new Error("prompt missing after save");
+    return c.json(toPromptDetail(row, found.item.parentPath), 201);
+  })
+  .delete("/:handle/:project/versions/*", async (c) => {
+    // Deletes one version for good (feature 73); the last remaining version cannot go.
+    const found = await versionedPrompt(c);
+    if (!found) return notFound(c);
+    const number = Number(c.req.query("n"));
+    if (!Number.isInteger(number) || number < 1) return notFound(c);
+    const db = c.get("db");
+    const promptId = found.item.row.id;
+    const [v] = await db
+      .select({ id: promptVersion.id })
+      .from(promptVersion)
+      .where(and(eq(promptVersion.promptId, promptId), eq(promptVersion.number, number)));
+    if (!v) return notFound(c);
+    if (found.item.row.versionCount <= 1) {
+      return c.json({ error: "A prompt keeps at least one version" }, 400);
+    }
+    await db.transaction(async (tx) => {
+      if (v.id === found.item.row.versionId) {
+        // The live version goes: the newest remaining one becomes live.
+        const [next] = await tx
+          .select({ id: promptVersion.id })
+          .from(promptVersion)
+          .where(and(eq(promptVersion.promptId, promptId), ne(promptVersion.id, v.id)))
+          .orderBy(desc(promptVersion.number))
+          .limit(1);
+        await tx
+          .update(prompt)
+          .set({ currentVersionId: next?.id ?? null })
+          .where(eq(prompt.id, promptId));
+      }
+      await tx.delete(promptVersion).where(eq(promptVersion.id, v.id));
+    });
     return c.body(null, 204);
   });
