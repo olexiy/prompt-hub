@@ -31,3 +31,9 @@ Thumbs.db
 
 # Temp
 *.tmp
+
+# Cloudflare / Wrangler local state
+.wrangler/
+.dev.vars
+.dev.vars.*
+*.tsbuildinfo

@@ -1,0 +1,22 @@
+packages:
+  - apps/*
+  - packages/*
+  - e2e
+
+# Supply-chain safeguards (ADR "Security standard", docs/research/architecture.md §6).
+# New versions are installed only 3 days after publication; a fix for a known
+# vulnerability can be exempted by name in minimumReleaseAgeExclude, with a reason in the PR.
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude: []
+
+# Dependency install scripts are blocked unless reviewed and listed here.
+# esbuild and workerd: postinstall only verifies the platform binary that already comes
+# as an optional dependency (fallback: download from registry.npmjs.org). Not needed, so denied.
+strictDepBuilds: true
+allowBuilds:
+  esbuild: false
+  workerd: false
+  # pnpm itself is pinned as a root devDependency so nested `pnpm` calls in scripts resolve
+  # without a global install; its install script links the platform binary (same code we
+  # already run through corepack), so it is allowed.
+  pnpm: true
