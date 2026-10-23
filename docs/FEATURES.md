@@ -1,127 +1,154 @@
-# Feature catalogue and v1 scope
+# Feature catalogue and versions
 
-Issue #3. Sources: [brief.md](brief.md) (marked **B**), ideas from the [market scan](research/market-scan.md) (marked **M**), and what a multi-user public service needs (marked **S**).
+Issue #3. Built in a brainstorm with Olexiy on 2026-10-23 from [brief.md](brief.md), the [market scan](research/market-scan.md) and his dictated ideas. Numbers are stable IDs used in issues and discussion; gaps are removed items (see the end).
 
-**Priority for v1:** `must` (v1 is useless without it) · `should` (planned for v1, can slip) · `could` (only if cheap) · `won't` (not in v1, maybe later).
-**Rec** = Claude's recommendation. **Decision** = Olexiy's call; empty until discussed.
+## Product shape (agreed)
+- **Project → optional folders → prompts → versions.** Prompts are fully independent of each other; no branches, no variants, no shared blocks in early versions. Variants are separate prompts in a folder, a duplicate, or a variable.
+- **A new version is created by a button** ("New version"); a plain save edits the current version. History is visible **only to the author**.
+- **Deleting is final** for everything (versions, prompts, folders, projects). No trash. Deleting a project asks to type its name, like GitHub.
+- **Public projects** show only the latest version of each prompt. Visitors can comment and star. A fork copies only the latest versions, never the history.
+- **Registration is invite-only** for now (Olexiy and friends). Open sign-up is a later decision.
+- **Monetisation is designed in from the start** (plan and limits in the data model) but built late. Free limits: 25 projects, 250 prompts in total. Own AI key (BYOK) on Free and Pro; our AI on Pro through OpenRouter with a configurable monthly budget per user.
+- **No integrations** (API, MCP, CLI, ComfyUI node, browser extension): the integration is copy & paste.
+- **Built for later scale without building it now:** i18n-ready UI, tenant/plan-aware data model, IDs and URLs that survive renames.
 
-## Shape of a real prompt
-The first import material shapes the model. `olexiy/comfy-h3-studio/prompts/` holds one video prompt in several **length variants** (`len_6s` … `len_15s`, `prompt_5s`, `prompt_plain`), each 1.5–2 KB, with **named sections** that repeat across variants: shot list with timecodes, *appearance lock*, *background lock*, camera, soundscape, music, **negative prompt**, and **image references** (`<Picture 1>` is the first frame). So a prompt is not one string: it has sections, variants that differ by a parameter, reusable blocks and a separate negative part. The vault `prompts/` folder (7 notes: coding, writing, research, health) is the LLM-side counterpart: plain text prompts with some placeholders.
+## Feature list
 
-## A. Projects, prompts and versions
+### Projects, prompts, versions
+1. Projects: create, rename, archive, delete
+2. Prompts inside a project
+3. "New version" button; the old version stays in the history
+4. Version history (author only), restore an old version as the newest
+5. Diff between two versions
+6. Labels on versions (live, best, custom)
+9. Prompt sections (positive, negative, camera, …)
+10. Block prompt: a prompt assembled from a fixed set of sub-prompts *(later; replaces shared blocks)*
+11. Folders inside a project, optional
+12. Prompt types: text / chat / image-video
+73. Delete any version (garbage versions)
+78. GitHub-like URLs: `/{user}/{project}/{folder}/{prompt}`
+79. Duplicate a prompt
+82. Autosave of the current edit
+102. Final delete everywhere; project deletion confirmed by typing its name
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| A1 | Projects: create, rename, describe, archive, delete | B | must | the top-level container in the brief | |
-| A2 | Prompts inside a project: create, edit, delete, move between projects | B | must | core | |
-| A3 | Every save of a prompt creates an immutable version with an optional message | B | must | the reason the product exists | |
-| A4 | Version history: list, view any version, restore as new version | B | must | versioning is useless without it | |
-| A5 | Diff between two versions (word-level, side by side) | M | must | long shot-list prompts change by a few words; without a diff history is unreadable | |
-| A6 | Labels on versions (`live`, `best`, custom), movable | M (Langfuse) | should | "which version is the good one" without deleting others | |
-| A7 | Variants: sibling prompts of one prompt (e.g. 6 s / 9 s / 15 s), each with its own history | M (PromptHub branches) + import material | should | exactly the comfy-h3-studio case; simpler than Git branches | |
-| A8 | Git-style branches and merge for prompts | M (PromptHub) | won't | heavy UX for single-author prompts; A7 covers the need | |
-| A9 | Structured prompt: named sections (positive, negative, camera, …) instead of one text field | import material | should | negative prompt and repeated sections are the ComfyUI reality; keeps diff and copy precise | |
-| A10 | Reusable blocks: a block (e.g. "appearance lock") referenced from many prompts, versioned itself | M (Langfuse references) | could | strong for character consistency, but adds dependency/versioning complexity | |
-| A11 | Folders / sub-projects inside a project | M | could | tags (E2) may be enough at v1 sizes | |
-| A12 | Prompt types: text, chat (system/user messages), image/video | M | should | LLM vs ComfyUI prompts differ; type drives copy format | |
-| A13 | Soft delete with trash, restore within 30 days | S | should | protects against the "lost good prompt" problem the product is for | |
+### Variables and copy
+14. `{{variables}}` substituted into the prompt
+15. Fill-in form and preview
+16. "Copy" assembles the prompt with variables and puts the final text on the clipboard
+17. Default values and descriptions for variables
+18. Typed variables (select, number, …)
+19. Saved value sets
+20. Copy a single section (e.g. only negative)
+21. Unicode everywhere (Cyrillic, German umlauts)
+23. Copy history with the used values
+81. Warning on copy when variables are unfilled
 
-## B. Variables, rendering and copy
+### Public projects and sharing
+24. Project visibility private / public, switchable
+25. Comments: own notes on a prompt; visitors comment on public prompts
+26. Comments on a specific version (author only)
+27. Optional meta fields: description, note, custom fields
+30. Unlisted link (readable by anyone with the link)
+31. Stars and fork (fork = latest versions only)
+32. Public profile
+34. Result images and videos attached to a version
+35. Licence field on public prompts *(very low)*
+57. Report button on public content; admin hides
+83. Copy counter on public prompts
+84. Email notifications (comments, reports)
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| B1 | Variables in text, `{{name}}` syntax, detected automatically | B | must | brief | |
-| B2 | Fill-in form generated from the variables, then preview of the rendered prompt | B | must | brief | |
-| B3 | One-click copy of the rendered prompt to the clipboard | B | must | brief | |
-| B4 | Default values and descriptions per variable | M (Open WebUI) | must | without defaults every copy needs typing | |
-| B5 | Typed variables: select (options), number, boolean, multiline text | M (Open WebUI) | should | e.g. `{{duration | select:6s,9s,15s}}`; cheap once B1–B4 exist | |
-| B6 | Saved value sets ("presets") per prompt, e.g. "red-haired woman, bus stop" | S | should | repeated renders with the same values; removes retyping | |
-| B7 | Copy only one section (e.g. negative) or copy as JSON | A9 | could | useful for ComfyUI nodes with separate inputs | |
-| B8 | Unicode variable names and content (Cyrillic, Japanese) | M (Langfuse bugs) | must | Olexiy writes in RU/UA; Langfuse broke here | |
-| B9 | Logic in templates (if/loops, Jinja-like) | M | won't | turns prompts into code; security and UX cost | |
-| B10 | Variable values recorded with each copy (usage history) | M (ComfyUI_PromptManager) | could | nice "what did I use last time"; privacy considerations | |
+### Templates
+87. Prompt page templates per task (video shot list, SD/Flux image, LLM system prompt, coding agent; own templates) — sets sections, meta fields and starting text
+96. Templates per model (Flux, SDXL, MiniMax H3, Kling, GPT, Claude, …) with the model's preferred structure and output format on copy (plain text, JSON, XML tags)
+85. Starter projects and examples for new users
 
-## C. Collaboration and sharing
+### Import, export and extractors
+36. Import a single prompt (.txt, .md)
+37. Import a project from a zip
+38. Export a project as a zip: latest versions; variables filled if set, otherwise `{{…}}` placeholders. A copy with history only through a fork.
+39. Export as Markdown (Obsidian)
+40. Meta fields from Markdown front matter
+86. **Comfy Extractor**: drop a ComfyUI PNG or video → prompt (positive/negative) into the prompt, full workflow description (nodes, settings, checkpoint, LoRAs with weights, VAE, seed, sampler, steps, CFG) into a meta field
+88. Extractor for A1111 / Forge / InvokeAI images *(low)*
+89. Workflow viewer: stored ComfyUI graph shown read-only, JSON downloadable
+99. LoRA info from `.safetensors` metadata (trigger words, training tags)
+100. Import prompts from a ChatGPT / Claude chat export
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| C1 | Project visibility: private / public (read-only for everyone, also without login) | B | must | brief, "like GitHub" | |
-| C2 | Comments on a prompt (author, time, edit/delete own) | B | must | brief | |
-| C3 | Comments tied to a specific version | B | should | "this version over-smooths the face" belongs to v7, not to the prompt | |
-| C4 | Meta fields: free key–value pairs per prompt (model, sampler, seed, CFG, source link…) | B | must | brief | |
-| C5 | Meta field templates per project (same fields on every prompt) | S | could | consistency for ComfyUI parameters | |
-| C6 | Collaborators on a project with roles: owner / editor / viewer | S | should | the multi-user promise; needed before anyone else uses it | |
-| C7 | Unlisted link (anyone with the link can read) | M | could | share one project without making it public | |
-| C8 | Stars and fork of public projects/prompts into your own account | M (PromptHub) | could | community feature; v1 has no community yet | |
-| C9 | Public profile page listing a user's public projects | S | could | follows from C1 | |
-| C10 | Organisations / teams with billing | — | won't | non-goal in PROJECT_PLAN | |
-| C11 | Result attachments: images/videos attached to a version as evidence | M (ComfyUI galleries) | should | ComfyUI users find prompts through outputs; needs object storage (cost, moderation) | |
-| C12 | Licence field on public prompts (CC0, CC-BY, all rights reserved) | M (prompts.chat) | could | matters once things are public | |
+### Search and tags
+44. Full-text search over own prompts
+45. Tags on projects and prompts
+74. Search and filter by tag across the whole hub
+46. Sort and filters (recently edited, recently copied, type)
+47. Favourites
+48. Search across public prompts of all users
+49. Semantic search by intent
 
-## D. Import and export
+### Accounts and security
+50. Email + password, verification, reset
+51. Sign-in with GitHub and Google
+52. Authorisation checked on every request
+53. Two-factor authentication
+54. Rate limiting
+55. Account deletion and data export (GDPR)
+56. Audit log *(low)*
+58. Admin area (users, invites, reports)
+59. Security headers, CSP, OWASP level (chosen in #4)
+103. Invite-only registration (invite links/codes)
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| D1 | Import a single prompt: paste or upload `.txt` / `.md` | B | must | brief | |
-| D2 | Import a whole project: zip or folder of `.txt`/`.md` files (one file = one prompt) | B | must | brief; covers comfy-h3-studio and the vault folder | |
-| D3 | Own project format (JSON/YAML with versions, variables, meta, comments) for export and re-import | S | must | lossless backup; export is also a GDPR right | |
-| D4 | Export project as a zip of Markdown files | S | should | readable outside the app, e.g. into Obsidian | |
-| D5 | Import from Markdown front matter (meta fields from YAML header) | S | could | vault notes have properties | |
-| D6 | Import from a GitHub repo folder by URL | S | could | handy, but adds outbound fetching (SSRF care) | |
-| D7 | Import from ComfyUI workflow JSON / PNG metadata (extract prompts) | M | could | strong ComfyUI hook; formats vary | |
-| D8 | Import from other products (Langfuse, PromptHub, prompts.chat) | M | won't | no users to migrate yet | |
+### AI tools
+66a. Translate a prompt into good English
+66c. Own AI key (BYOK, Free and Pro) or our AI (Pro, via OpenRouter, configurable budget per user)
+91. Turn a selected phrase into a variable
+90. Split pasted text into template sections automatically
+92. Compare two different prompts
+93. Generate length variants (6 s / 15 s from 9 s)
+94. Prompt from an image
+97. AI screenwriter / copywriter: rough idea → per-second storyboard
+98. Prompt optimiser and analyst: tokens, cost per model, context share, warnings (free, no AI); shortening, model fit and an optimised new version (AI, Pro)
+101. Access to our AI tools' system prompts and customising them (Pro)
 
-## E. Search and organisation
+### Monetisation
+75. Plans Free and Pro (Team maybe later)
+76. Free limits: 25 projects, 250 prompts in total
+77. Payments and subscription *(only if the product is ever launched)*
+33. Organisations and team billing *(later)*
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| E1 | Full-text search over own prompts (title, text, meta), Cyrillic-aware | S | must | finding a prompt is half the value | |
-| E2 | Tags on prompts, filter by tag | S | must | cheap, flexible organisation | |
-| E3 | Sort/filter: recently edited, recently copied, by project, by type | S | should | daily navigation | |
-| E4 | Favourites / pin | S | could | small | |
-| E5 | Search public prompts of all users | S | could | only meaningful with public content | |
-| E6 | Semantic search by intent ("prompt for slow camera pan") | M (HN voices) | won't | needs embeddings infra and cost; revisit after v1 | |
+### Basics
+67. Responsive UI (copy from the phone)
+68. Light and dark theme
+69. UI in English, Russian, German
+70. Keyboard shortcuts
+71. Legal pages (privacy, imprint, terms)
+72. Backups with a tested restore
 
-## F. Accounts and security
+## Versions (proposal)
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| F1 | Sign-up / sign-in with email + password, email verification, password reset | B | must | brief | |
-| F2 | Sign-in with GitHub and Google (OAuth/OIDC) | S | should | lower friction; provider choice in #4 | |
-| F3 | Authorisation on every request: project/prompt access checked server-side per user and role | B | must | brief; the core security property of a multi-tenant app | |
-| F4 | Two-factor authentication (TOTP) | S | should | public service; may come from the auth provider | |
-| F5 | Rate limiting on auth and write endpoints, abuse protection on sign-up | S | must | internet-facing | |
-| F6 | Account deletion with all data, data export | S | must | GDPR (Olexiy is in the EU) | |
-| F7 | Audit log per project (who changed what) | S | could | versions already record author and time | |
-| F8 | Moderation of public content: report button, admin can hide | S | should | required once C1 lets anyone publish | |
-| F9 | Admin area (users, reports, stats) | S | could | minimal version via DB at first | |
-| F10 | Security headers, CSP, input validation, OWASP ASVS level chosen in #4 | S | must | requirement, details in #4 | |
+Each version ends in something Olexiy uses daily; later versions can be dropped without breaking earlier ones.
 
-## G. Integrations
+### MVP — "my prompts, online, safely"
+Invite-only, deployed, Olexiy as the first real user; replaces text files and notes.
+1, 2, 3, 4, 5, 11, 73, 78, 79, 102 · 14, 15, 16, 17, 21, 81 · 24 (private + read-only public view of latest versions), 27 · 36, 37, 38 · 44, 45, 74, 46 · 50, 52, 59, 103 · 67, 68, 69, 72.
+Data model already carries: plan/limits per user, comments and stars tables can come later without migration pain, i18n keys.
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| G1 | REST API with personal access tokens (read prompts, render with variables) | M | should | scripts and ComfyUI can fetch prompts; the UI uses the same API anyway | |
-| G2 | MCP server (Claude, Cursor read and render prompts) | M (prompts.chat, promptify) | could | thin layer over G1; very useful for Olexiy's Claude work | |
-| G3 | ComfyUI custom node: pick a prompt/version, render variables inside the workflow | M | could | strong differentiator; separate repo, after G1 | |
-| G4 | CLI (`ph get project/prompt --var x=y`) | M | could | thin layer over G1 | |
-| G5 | Browser extension inserting prompts into ChatGPT/Claude | M | won't | crowded space, separate product | |
-| G6 | Run a prompt against a model, evaluations, tracing | M | won't | LLMOps territory, non-goal | |
-| G7 | AI help: "improve this prompt", auto-tags | M | won't | paid API cost; revisit later | |
+### v1 — "ComfyUI workbench"
+34 result images/videos · 86 Comfy Extractor · 9 sections · 87 task templates · 6 labels · 18 typed variables · 19 value sets · 20 copy a section · 82 autosave · 47 favourites · 70 shortcuts · 25 own notes · 39, 40 Markdown export/front matter · 54 rate limiting · 55 account deletion/export.
 
-## H. Product basics
+### v2 — "Public and friends"
+25 visitor comments · 31 stars and fork · 32 public profile · 48 public search · 30 unlisted link · 57 reports · 58 admin area · 84 notifications · 83 copy counter · 53 2FA · 51 GitHub/Google sign-in · 89 workflow viewer · 99 LoRA info.
 
-| ID | Feature | Src | Rec | Why | Decision |
-|---|---|---|---|---|---|
-| H1 | Responsive UI (works on phone for copy) | S | should | copy from phone into a mobile app | |
-| H2 | Dark mode | S | could | cheap with a component library | |
-| H3 | UI languages: English first, Russian/Ukrainian later | S | could | i18n setup is cheap early, translations later | |
-| H4 | Keyboard shortcuts (search, copy) | S | could | power-user speed | |
-| H5 | Legal pages: privacy policy, terms, imprint | S | must | required before going public in the EU | |
-| H6 | Backups of the DB with tested restore | S | must | losing prompts is the failure the product exists to prevent | |
+### v3 — "AI and Pro"
+75, 76 plans and limits enforced · 66c BYOK / our AI via OpenRouter · 66a translate · 98 optimiser and analyst · 96 model templates · 91 make variable · 90 split into sections · 92 compare prompts · 100 chat import · 85 starter projects · 10 block prompts · 71 legal pages (needed before open registration).
 
-## Won't-have list for v1
-Filled from the agreed decisions. Candidates: A8 Git branches, B9 template logic, C10 organisations/billing, D8 migration from other products, E6 semantic search, G5 browser extension, G6 running/evaluating prompts, G7 AI help.
+### v4 — "AI studio"
+97 AI screenwriter · 93 variants · 94 prompt from image · 101 custom system prompts · 49 semantic search · 77 payments (only on a real launch) · 33 teams.
 
-## v1 scope
-Summarised in [PROJECT_PLAN.md](PROJECT_PLAN.md) once the batches are agreed.
+### Backlog (low, no version)
+23 copy history · 26 version comments · 35 licence · 56 audit log · 88 A1111/Forge extractor.
+
+## Removed
+7 variants (folders, duplicate or a variable instead) · 8 branches · 13 trash (deletes are final) · 22 template logic · 28 meta-field templates (covered by 87) · 29 collaborators · 41 import from GitHub · 42 extraction inside import (became tool 86) · 43 migration from other products · 60 REST API · 61 MCP server · 62 ComfyUI node · 63 CLI · 64 browser extension · 65 running prompts / evals · 66b, 80, 95 (merged into 98).
+
+## Open, decided later
+- Product name ("PromptHub" taken) — separate issue.
+- Monthly hosting budget — #4.
+- Payments, VAT, merchant of record — only if the product is ever launched.

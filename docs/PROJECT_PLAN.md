@@ -17,9 +17,23 @@ Related: [brief.md](brief.md) · [DEV_PROCESS.md](DEV_PROCESS.md) · [decisions.
 - Multi-user, internet-facing from day one: accounts, private and public projects, a security posture fit for a public service.
 - A portfolio-quality codebase and a GitHub-visible process.
 
+- Designed as a potential paid product: Free/Pro plans and limits live in the data model from the start, billing is built late (v3+).
+
 **Non-goals (for now)**
-- Running prompts against models, evaluation, tracing or observability (LLMOps platforms do this; decide in the market scan whether any of it belongs in scope).
-- Monetisation, teams/organisations billing.
+- Running prompts against models, evaluation, tracing or observability (LLMOps platforms do this).
+- Integrations (REST API, MCP, CLI, ComfyUI node, browser extension): copy & paste is the integration.
+- Teams/organisations billing; real payments until the product is actually launched.
+
+## v1 scope and versions
+Full list and reasoning: [FEATURES.md](FEATURES.md). Product shape: project → optional folders → prompts → versions (button-created, history visible only to the author, deletes are final); variables with one-click rendered copy; public projects show latest versions only; invite-only registration.
+
+| Version | Theme | Highlights |
+|---|---|---|
+| MVP | My prompts, online, safely | projects, folders, versions + diff, variables + copy, tags + search, private/public, zip import/export, invites, EN/RU/DE, themes, backups |
+| v1 | ComfyUI workbench | result images/videos, Comfy Extractor, sections, task templates, labels, typed variables, value sets |
+| v2 | Public and friends | visitor comments, stars, forks, profiles, public search, reports, admin, 2FA, OAuth |
+| v3 | AI and Pro | plans and limits, BYOK / OpenRouter, translate, optimiser and analyst, model templates, legal pages |
+| v4 | AI studio | AI screenwriter, variants, prompt from image, custom system prompts, semantic search, payments |
 
 ## 2. Architecture
 To be decided in Phase 0 (architecture task): stack, hosting, DB, auth provider, security standard (e.g. OWASP ASVS level), cost. Recorded here plus ADRs in `decisions.md`.
@@ -33,7 +47,7 @@ Each phase = a GitHub milestone + epic issue (`phase-N`). Tasks are created when
 **Tasks:** market scan (build vs. adopt) · feature catalogue and v1 scope · architecture and stack · roadmap on GitHub.
 **Exit criteria:**
 - [x] Market scan done; Olexiy decided build / fork / adopt. → **build**
-- [ ] Feature catalogue with priorities; v1 scope agreed with Olexiy.
+- [x] Feature catalogue with priorities; v1 scope agreed with Olexiy. → [FEATURES.md](FEATURES.md)
 - [ ] Architecture, stack, hosting and security standard decided and recorded as ADRs.
 - [ ] Development phases exist as milestones + epics; Phase 1 split into tasks.
 
@@ -51,4 +65,4 @@ Defined by the roadmap task. Phase 1 starts with the project skeleton, CI (see `
 ## 5. Status
 | Phase | State |
 |---|---|
-| 0 — Discovery | in progress — market scan done (build) |
+| 0 — Discovery | in progress — market scan done (build), features and versions agreed |
