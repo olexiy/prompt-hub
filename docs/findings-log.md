@@ -2,6 +2,12 @@
 
 Observations that are not decisions: measurements, surprises, things that did not work. Newest first, dated.
 
+## 2026-10-23 — Security baseline notes (#23)
+
+- **Primer React 38 runs under a strict CSP** (`style-src 'self'`, no `unsafe-inline`): no violations on the sign-in and reset screens. React `style` props are applied through the CSSOM, which `style-src` does not block; only the inline `<style>` in `index.html` had to move to a CSS file.
+- **The Rate Limiting binding works locally**: Miniflare implements it, so the 429 test runs in the Workers Vitest pool and under `wrangler dev`. All requests without `cf-connecting-ip` share one key, so API tests set a random IP per request.
+- **`_headers` in `apps/web/public`** is copied to `dist/` by Vite and applied by `wrangler dev` to the HTML and the SPA fallback, not to `/api/*` (the Worker sets those).
+
 ## 2026-10-23 — CI and push protection checked (#18)
 
 - First CI run green in about 1 minute wall time; CodeQL default setup picked up `javascript-typescript` on the first TypeScript PR.
