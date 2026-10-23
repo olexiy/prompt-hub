@@ -48,3 +48,7 @@ corepack pnpm db:migrate
 ```
 
 `db:start` runs local Supabase in Docker (Postgres on 54322, Auth, Studio on http://127.0.0.1:54323). `db:migrate` needs `DATABASE_URL` (local: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`). After changing `schema.ts`: `corepack pnpm db:generate`, review the SQL, commit it. DB tests need `TEST_DATABASE_URL` (same local URL; CI uses a Postgres 17 service) and create a throwaway database per test file.
+
+## Variable syntax
+
+`{{name}}` or `{{ name }}`; a name is 1–64 Unicode letters, digits, `_` or `-`, starting with a letter, digit or `_` (`{{тема}}`, `{{Größe}}`). Anything else between double braces stays plain text. Rendering (`renderPrompt` in `packages/core/src/variables.ts`) fills the value, else the definition's default, else keeps the placeholder and reports the name as unfilled; values are inserted literally, nothing is evaluated. `prompt_version.variables` holds the definitions (`name`, `default`, `description`; typed variables later), validated by `variableDefsSchema`.
