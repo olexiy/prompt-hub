@@ -1,106 +1,145 @@
-# Architecture options — stack, hosting, data, security, design
+# Architecture — stack, hosting, repo, CI/CD, security, design
 
-Issue #4 · checked online on **2026-10-23**. Constraints from Olexiy: **€0 per month** for now; a sleeping DB is fine (the project is worked on regularly); Supabase optional; design should feel like GitHub — simple, for IT people. Scope: [FEATURES.md](../FEATURES.md) (MVP first, plans/limits in the data model from day one).
+Issue #4 · checked online on **2026-10-23**. Constraints from Olexiy: **€0 per month**; a sleeping DB is fine; his stack is *not* required ("Claude writes the code: pick what is best, safest and most convenient"); **security is a top priority** (AI-assisted attacks, latest versions, monitoring for zero-days); design simple and functional, GitHub-like; the existing Hetzner server (personal sites) only if it brings a big advantage. Scope: [FEATURES.md](../FEATURES.md).
 
-## TL;DR — recommendation
-**Spring Boot 4.1 (Java 25) + Angular 22 + Primer CSS, Postgres and Auth on Supabase Free, API on Google Cloud Run (free tier, GraalVM native image), frontend on Cloudflare (free static hosting), files later on Cloudflare R2.** Total: **€0/month**, EU regions, Olexiy's home ground, no self-written password handling.
+## TL;DR — recommendation (revision 2)
+**TypeScript end to end on Cloudflare Workers:** one Worker serves the React + Primer React app and a Hono REST API; **Postgres and Auth on Supabase Free** reached through Cloudflare Hyperdrive; shared validation and prompt-rendering code in one package; files later on R2. **€0/month, two vendors (Cloudflare, Supabase), no servers to patch, no cold starts, EU data.**
 
-## 1. Current versions (checked today)
-| Item | Version | Source |
-|---|---|---|
-| Spring Boot | **4.1.2** (current GA), 4.0.9, 3.5.16 | [api.spring.io](https://api.spring.io/projects/spring-boot/releases) |
-| Angular | **22.2.3**, needs Node `^22.22.3 \|\| ^24.15.0 \|\| >=26` | [npm](https://registry.npmjs.org/@angular/core/latest) |
-| Java | 25 LTS (21 installed locally; 25 to be installed) | — |
-| Primer CSS | MIT, 13k ★, pushed today | [primer/css](https://github.com/primer/css) |
-| Primer React | MIT, 3.9k ★, pushed today | [primer/react](https://github.com/primer/react) |
-| Spartan UI (shadcn for Angular) | 1.x stable, 55+ components | [spartan-ng](https://github.com/spartan-ng/spartan) |
+Revision 1 recommended Spring Boot on Cloud Run + Angular. It still works and stays the alternative (§2), but on a strict €0 budget it costs more complexity for no security gain: a JVM needs GraalVM native images to avoid 5–15 s cold starts, a third vendor (Google, with a card) and two dependency ecosystems (Maven and npm), while the frontend needs npm anyway.
+
+## 1. Current versions (npm registry / spring.io, today)
+| Item | Version | Item | Version |
+|---|---|---|---|
+| TypeScript | 7.0.2 | React | 19.3.1 |
+| Hono | 4.13.13 | @primer/react | 38.42.0 (React 18/19) |
+| Vite | 8.3.5 | @primer/css | 22.3.2 |
+| Wrangler | 4.152.0 | Drizzle ORM | 0.45.4 |
+| Zod | 4.6.7 | @supabase/supabase-js | 2.118.0 |
+| Vitest | 5.0.5 | Playwright | 1.64.1 |
+| pnpm | 12.15.0 | Node (local) | 24 |
+| *Alternative:* Spring Boot | 4.1.2 | *Alternative:* Angular | 22.2.3 |
 
 ## 2. Stack options
 
-| | A. Spring Boot + Angular *(recommended)* | B. TypeScript on Cloudflare | C. Angular + Supabase only |
+| | **A. TS on Cloudflare Workers** *(recommended)* | B. Spring Boot + Angular (revision 1) | C. Supabase only (Edge Functions + RLS) |
 |---|---|---|---|
-| Backend | Spring Boot 4.1, Java 25, REST, Spring Security resource server | Hono on Cloudflare Workers | none: Supabase Data API + Row Level Security, Edge Functions for extras |
-| Frontend | Angular 22 + Primer CSS | React + Primer React (real GitHub components) | Angular 22 + Primer CSS |
-| DB | Postgres (Supabase or Neon) | Cloudflare D1 (SQLite) | Supabase Postgres |
-| Cost | €0 | €0 | €0 |
-| Cold start | yes on Cloud Run; native image cuts it from seconds to sub-second (blog claims, we measure in Phase 1) | none | none |
-| Fit with Olexiy | home ground, portfolio for Java consulting | new stack, learning curve | little backend code to show |
-| Security model | authorisation in one backend, testable with integration tests | same, in TS | everything in RLS policies — powerful but easy to get subtly wrong, hard to test |
-| Later AI features (OpenRouter, budgets) | natural in a backend | fine | Edge Functions (Deno), weaker |
+| Runtime | V8 isolates, patched by Cloudflare; no OS, no container | JVM native image in a container on Cloud Run | Deno Edge Functions |
+| Cold start | none (isolates start in ms) | seconds on JVM, sub-second only with native image | yes, function cold starts |
+| Free hosting | Workers Free: 100k requests/day | Cloud Run free tier, card required | Supabase Free: 500k invocations |
+| Vendors | Cloudflare + Supabase | Google + Supabase + Cloudflare | Supabase (+ static host) |
+| Languages / supply chains | one (TS, npm) | two (Java/Maven + TS/npm) | one, but logic split between SQL policies and functions |
+| Shared code front/back | yes: one Zod schema validates in the form and in the API; one renderer for `{{variables}}` in preview and export | duplicated (Java + TS) | partial |
+| Security model | authorisation in one API layer, integration tests per endpoint | same, Spring Security | Row Level Security for everything: powerful, easy to get subtly wrong |
+| GitHub look | **Primer React = GitHub's real components** (accessible, light/dark) | Primer CSS only, own components | same as A or B |
+| Olexiy reads it easily | good (TS); React less familiar than Angular | best | medium |
 
-**Why A:** the product is mostly CRUD + versioning + authorisation; Spring Boot is where Olexiy is fastest and where the security story is strongest (method security, integration tests against real Postgres with Testcontainers). B is the cheapest to run but throws away the home-ground advantage; C is fastest to start but puts the whole security model into RLS.
+**Why A wins now:** smallest attack surface we have to maintain (no server, no container image, no JVM), zero cold starts on a free plan, one language and one dependency tree to harden, and the real GitHub component library. The npm supply chain is the main risk of A; §6 hardens it explicitly.
 
-## 3. Hosting, DB, auth, files — free tiers and traps
+**Why not Supabase Edge Functions alone:** business logic would live half in RLS policies and half in Deno functions; harder to test and review than one API. We still use Supabase for what it does best: Postgres and Auth.
 
-| Need | Choice | Free tier (today) | Trap and mitigation |
+## 3. Hosting and services
+
+| Need | Choice | Free tier (today) | Trap → mitigation |
 |---|---|---|---|
-| API | **Google Cloud Run**, `europe-west3` (Frankfurt) | 2M requests, 180k vCPU-s, 360k GiB-s per month ([pricing](https://cloud.google.com/run/pricing)) | needs a billing account (card) though €0; JVM cold start 5–15 s → **GraalVM native image** (Spring Boot supports it), set a budget alert at €1 |
-| DB | **Supabase Free** Postgres, `eu-central-1` | 500 MB DB, 2 projects, 5 GB egress | pauses after 7 days idle (accepted); daily backups on Free are limited → our own `pg_dump` job to R2/GitHub (feature 72) |
-| Auth | **Supabase Auth** (same project) | 50k MAU; email/password, magic links, OAuth, TOTP MFA | disable public sign-up and use admin invites (103); verify asymmetric JWTs (ES256) in Spring via the JWKS URL; built-in email is rate-limited → custom SMTP via **Resend** free (3,000/month, 100/day) when friends join |
-| Frontend | **Cloudflare** Workers static assets / Pages | free, global CDN, custom domain later | none relevant |
-| Files (v1: result images/videos) | **Cloudflare R2** | 10 GB, zero egress | needs a card on file; size limits per upload and per plan |
+| App + API | **Cloudflare Workers** (static assets + Hono) | 100k requests/day, 10 ms CPU per request | CPU limit → keep handlers lean; heavy work (AI, extractors) later in queues or Workers Paid ($5) if ever needed |
+| DB | **Supabase Free** Postgres, `eu-central-1` | 500 MB, 2 projects (prod + staging) | pauses after 7 days idle (accepted); own nightly `pg_dump` backup |
+| DB connection | **Cloudflare Hyperdrive** | included on Workers Free (~100k queries/day, ~20 origin connections) | daily quota → fine for friends-scale; monitor |
+| Auth | **Supabase Auth** | 50k MAU, email/password, OAuth, TOTP MFA | sign-up closed, invites only (103); session in **HttpOnly cookies set by our Worker**, not in `localStorage` |
+| Mail | Supabase built-in, later **Resend** | 3,000/month, 100/day | built-in SMTP is rate-limited → Resend when friends join |
+| Files (v1) | **Cloudflare R2** | 10 GB, zero egress | card on file; per-upload and per-plan limits |
+| Bot protection | **Cloudflare Turnstile** + free managed WAF rules | free | on sign-in and invite acceptance |
 
-Rejected for the API: **Render** free (spins down after 15 min, ~1 min wake-up, 750 h cap — [docs](https://render.com/docs/free)); **Fly.io** (no free tier, ~$3.19/mo for 512 MB); **Koyeb** (card-free plan removed Feb 2026, per a third-party source); **Oracle Always Free** (allowance halved to 2 OCPU / 12 GB in June 2026, idle VMs reclaimed, capacity errors in Frankfurt — [InfoQ](https://infoq.com/news/2026/07/oracle-cloud-free-tier-limits/)); **Hetzner** (not free, ~€5.49/mo, and we'd own patching); **Cloudflare Containers** (needs Workers Paid $5/mo).
-Alternative DB: **Neon Free** (0.5 GB, 100 CU-hours, scales to zero after 5 min, cold start ~1 s) — fine, but then auth is ours or a third vendor; Supabase gives Postgres + Auth in one free project.
-
-**Supabase hardening:** the backend is the only data path. Turn off the Data API (PostgREST) or expose no tables to it, never ship the service key to the browser, the browser only talks to Supabase Auth.
+**Rejected:** Render (sleeps after 15 min, ~1 min wake-up), Fly.io (no free tier), Koyeb (card-free plan removed), Oracle Always Free (halved in June 2026, idle VMs reclaimed), Cloudflare Containers ($5), **Hetzner** — see §8.
 
 ## 4. Components
 
 ```mermaid
 flowchart LR
-  U[Browser<br/>Angular 22 + Primer CSS] -->|static files| CF[Cloudflare<br/>static hosting]
-  U -->|sign-in, tokens| SA[Supabase Auth]
-  U -->|REST + JWT| API[Spring Boot 4.1 native<br/>Cloud Run, Frankfurt]
-  API -->|verify JWT via JWKS| SA
-  API -->|SQL, Flyway| DB[(Supabase Postgres<br/>eu-central-1)]
-  API -.->|v1: result files, backups| R2[(Cloudflare R2)]
+  U[Browser<br/>React + Primer React] -->|HTTPS, same origin| W[Cloudflare Worker<br/>static assets + Hono API]
+  W -->|sign-in, refresh<br/>HttpOnly cookies| SA[Supabase Auth]
+  W -->|verify JWT via JWKS| SA
+  W -->|SQL via Hyperdrive<br/>Drizzle| DB[(Supabase Postgres<br/>eu-central-1)]
+  W -.->|v1: result files| R2[(Cloudflare R2)]
   SA -.->|invites, resets| MAIL[Resend SMTP]
+  GH[GitHub Actions] -->|wrangler deploy<br/>migrations| W
+```
+One deployable, same origin for UI and API (no CORS, simple cookie security). Not microservices: at this scale they add attack surface and ops without benefit; the code is a **modular monolith** split by feature modules.
+
+## 5. Monorepo layout (pnpm workspaces)
+```
+apps/web/          React 19 + Primer React, Vite build, i18n (en/ru/de)
+apps/api/          Hono Worker: REST API under /api, serves apps/web build as static assets
+packages/core/     Zod schemas, types, {{variable}} parser and renderer, slug rules (used by web and api)
+packages/db/       Drizzle schema, SQL migrations, seed data
+e2e/               Playwright specs
+docs/              plan, decisions, research, runbooks
+.github/workflows/ ci.yml, deploy.yml, security.yml
 ```
 
-## 5. Data model sketch (MVP, ready for later versions)
-- `app_user` (id = Supabase user id, `handle` unique, display name, locale, theme, `plan` = FREE/PRO, created_at)
+## 6. CI/CD and supply-chain security
+**CI (`ci.yml`)** — on `pull_request` and `workflow_dispatch` only (DEV_PROCESS §4), `dorny/paths-filter` skips test jobs for docs-only PRs:
+1. `pnpm install --frozen-lockfile` (cached)
+2. lint (ESLint) · format check (Prettier) · typecheck (`tsc`)
+3. unit + integration tests (Vitest; API tests in the Workers runtime via `@cloudflare/vitest-pool-workers`, DB tests against a Postgres service container)
+4. build
+5. e2e (Playwright against local Worker + Postgres), report uploaded only on failure
+6. security: gitleaks (secrets), `pnpm audit --prod`, OSV-Scanner on the lockfile, Semgrep CE (SAST)
+
+**CD (`deploy.yml`)**
+- Every PR: preview version of the Worker (`wrangler versions upload`) against the **staging** Supabase project; URL posted to the PR.
+- Production: `workflow_dispatch` only, run after Olexiy's explicit go (project rule: deploys need approval) → DB migrations → `wrangler deploy` → smoke test.
+
+**Scheduled (`security.yml`)** — daily OSV-Scanner + `pnpm audit` on `main`; opens an issue labelled `security` on findings.
+
+**Supply-chain hardening (npm is the main risk: Shai-Hulud worm waves 2025–2026 hit ~800 packages; a May 2026 wave abused `pull_request_target` in GitHub Actions):**
+- pnpm with **`minimumReleaseAge`** (new versions only after ~3 days; security fixes allowed explicitly), install scripts blocked unless allow-listed, lockfile required.
+- **Dependabot**: alerts and security updates (free for private repos) immediately; version updates weekly, grouped, with a cooldown. "Latest versions" means latest *stable after the cooldown*.
+- GitHub Actions: pinned to commit SHAs, `permissions: read-all` by default, **never `pull_request_target`**, secrets only in the deploy job, Cloudflare API token scoped to this Worker only.
+- Few dependencies by policy: every new runtime dependency is named in the PR and justified.
+- Paid GitHub features we skip on a private repo (CodeQL code scanning, push protection) are replaced by Semgrep CE and gitleaks (pre-commit + CI). If the repo goes public, CodeQL and push protection become free and are switched on.
+
+**Zero-day monitoring:** Dependabot alerts + daily OSV scan for our code; Cloudflare patches the Workers runtime, Supabase patches Postgres and Auth (no OS or container of ours to patch); Cloudflare free managed WAF rules in front; `/security-review` before every production deploy that touches auth, authorisation or input handling.
+
+## 7. Application security standard
+**OWASP ASVS 5.0, Level 2.** Concrete controls from the MVP:
+- **AuthN** by Supabase Auth (we store no passwords); public sign-up off, invites only; Turnstile on sign-in; TOTP MFA in v2. Session: access/refresh tokens in `HttpOnly; Secure; SameSite=Lax` cookies set by the Worker; JWTs (ES256) verified against Supabase JWKS on every API call.
+- **AuthZ** in one API layer: every query is scoped by owner or by `PUBLIC` visibility; public reads return only latest versions; an integration test per endpoint proves "other user → 404".
+- **Input**: Zod on every request body and query; size limits (prompt body, tags, slugs); slugs from a whitelist pattern; prompt text rendered as text, never HTML.
+- **Headers**: strict CSP (no inline scripts), HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors 'none'`.
+- **Rate limiting**: Workers rate-limiting binding per user and IP on writes, invites and auth endpoints.
+- **Secrets**: Wrangler secrets and GitHub Actions secrets only; Supabase service key never reaches the browser; Supabase Data API (PostgREST) disabled — the Worker is the only data path.
+- **Backups**: nightly `pg_dump` to R2, restore tested once per version.
+- **Privacy**: EU regions; account deletion and export in v1.
+
+## 8. Hetzner and the cloud question
+- **Hetzner server (personal sites): not used.** It would mean patching an OS and Docker ourselves, a single box that also hosts other people's sites (bigger blast radius in both directions), and the only gain — an always-on process — is not needed with Workers.
+- **Google Cloud vs AWS** (relevant only for option B): Cloud Run runs any container, scales to zero and has a permanent free tier (2M requests/month). AWS's nearest equivalent, App Runner, has no free tier; Lambda has an always-free 1M requests but Java on Lambda needs SnapStart or adapters plus API Gateway, and new AWS accounts since July 2025 get a credit-based free plan for six months. With option A, **no hyperscaler is needed at all**.
+
+## 9. Data model sketch (MVP, ready for later versions)
+- `app_user` (id = Supabase user id, `handle` unique, display name, locale, theme, `plan` FREE/PRO, created_at)
 - `project` (id, owner_id, `slug` unique per owner, name, description, visibility PRIVATE/PUBLIC, archived_at, timestamps)
-- `folder` (id, project_id, parent_id null, slug, name) — optional nesting
+- `folder` (id, project_id, parent_id null, slug, name)
 - `prompt` (id, project_id, folder_id null, `slug` unique per project+folder, title, type TEXT/CHAT/MEDIA, `current_version_id`, meta JSONB, timestamps)
-- `prompt_version` (id, prompt_id, `number`, body text, sections JSONB null (v1), message, created_at; deleted = row removed)
-- `variable` (id, prompt_version_id, name, type, default_value, description) — or JSONB on the version; decided in Phase 1
-- `tag`, `project_tag`, `prompt_tag` (tag text per owner)
+- `prompt_version` (id, prompt_id, `number`, body, sections JSONB null (v1), variables JSONB (name, type, default, description), message, created_at; deleting removes the row)
+- `tag`, `project_tag`, `prompt_tag` (tag per owner)
 - `invite` (code hash, created_by, email, expires_at, used_by)
-- `plan_limit` (plan, max_projects=25, max_prompts=250, …) — enforced from v3, data present from MVP
+- `plan_limit` (plan, max_projects = 25, max_prompts = 250, …) — data from MVP, enforced from v3
 - Later without reshaping: `comment`, `star`, `attachment`, `report`, `ai_budget`
-- IDs: UUIDv7; URLs use `handle/project-slug/folder-slug/prompt-slug`, renames keep IDs stable.
-- Full-text search: Postgres `tsvector` with the `simple` config (works for EN/RU/DE without stemming bias), upgraded later if needed.
+- IDs UUIDv7; URLs `handle/project/folder/prompt`; full-text search via Postgres `tsvector` (`simple` config for EN/RU/DE).
 
-## 6. Security standard
-**OWASP ASVS 5.0, Level 2** (the level OWASP recommends for apps handling user data). Concrete MVP controls:
-- **AuthN** by Supabase Auth (no passwords stored by us), sign-up closed, invites only; TOTP MFA available from v2.
-- **AuthZ** on every request in the service layer: owner checks for private data, public read only for `PUBLIC` projects and only latest versions; an integration test per endpoint for "other user gets 404".
-- **Input**: Bean Validation on all DTOs, size limits (prompt body, tags, slugs), slugs from a whitelist pattern; prompts rendered as text, never as HTML (XSS); strict CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`.
-- **Rate limiting** (54): per user and per IP on writes and invites (Bucket4j in Spring); Supabase rate-limits auth.
-- **Secrets** only in Cloud Run secrets / GitHub Actions secrets; gitleaks in CI.
-- **Dependencies**: Dependabot + OWASP dependency check / `npm audit` in CI.
-- **Backups** (72): nightly `pg_dump`, restore tested once per version.
-- **Privacy**: EU regions only; account deletion and export (55) in v1.
+## 10. Design language
+Simple and functional, for IT people, GitHub-like: **Primer React** components, Primer tokens, Octicons, light/dark from Primer themes. Screens follow GitHub patterns: header with search; `handle / project` page with tabs; folders and prompts as a file list; prompt page as a file view (monospace body, **Copy** top right, variables panel beside it); *History* as a commit list with diffs; labels as Primer labels, tags as topics. References: GitHub; [Quotient PromptLab UI by Evil Martians](https://evilmartians.com/chronicles/ui-for-quotient-ai-the-developer-tool-for-prompt-engineers) (variables next to the prompt); Langfuse prompt views (versions + labels). A clickable mockup of the main screens is the first UI task of the build.
 
-## 7. Design language
-Olexiy's brief: **simple and functional**, for IT people, reminiscent of GitHub. No marketing gloss, dense but calm, every screen does one job.
-- **Primer** (GitHub's own design system, MIT): Primer CSS + `@primer/primitives` tokens + Octicons give the GitHub look and the light/dark themes directly. With Angular we write our own small components on top of Primer CSS classes; Primer React would give ready components but means React (option B). Spartan (shadcn style) looks like Vercel/Linear, not GitHub.
-- Patterns to copy from GitHub: header with search, repo-style project page (`handle / project`, tabs *Prompts · Settings*), file-tree-like list of folders and prompts, prompt page like a file view (monospace body, "Copy" button top right, *History* like the commits list with diffs), labels as Primer labels, tags as topics.
-- References: GitHub itself; [Quotient PromptLab UI by Evil Martians](https://evilmartians.com/chronicles/ui-for-quotient-ai-the-developer-tool-for-prompt-engineers) (variables next to the prompt, dense layout); Langfuse prompt views (versions + labels). PromptHub's community pages (stars/forks) for v2.
-- A clickable mockup of the main screens comes as the first Phase 1 task, before UI code.
-
-## 8. Cost
+## 11. Cost
 | Item | Monthly |
 |---|---|
-| Cloud Run (free tier) | €0 (budget alert at €1) |
-| Supabase Free (DB + Auth) | €0 |
-| Cloudflare static + R2 (10 GB) | €0 |
+| Cloudflare Workers Free, Hyperdrive, R2 10 GB, Turnstile | €0 |
+| Supabase Free (prod + staging) | €0 |
 | Resend (3,000 mails) | €0 |
 | Domain | optional, ~€10–15/year, only when going public |
 | **Total** | **€0** |
 
-**Accounts Olexiy creates himself** (project rule): Supabase, Google Cloud (billing account with a card, €0 spend), Cloudflare; Resend later.
+**Accounts Olexiy creates himself:** Cloudflare (card needed for R2 only, at v1), Supabase; Resend later. No Google Cloud.
 
 ## Decision
-*Pending Olexiy's approval.* On approval: ADRs in `docs/decisions.md` (stack, hosting, DB, auth, security standard, design system) and an Architecture section in `PROJECT_PLAN.md`.
+*Pending Olexiy's approval of revision 2.* On approval: ADRs in `docs/decisions.md` and an Architecture section in `PROJECT_PLAN.md`.
