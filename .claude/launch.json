@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "prompt-hub",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": ["pnpm", "dev"],
+      "port": 8787
+    }
+  ]
+}

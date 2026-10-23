@@ -11,13 +11,15 @@ Related: Webdev lessons learned (website-specific rules) · ComfyUI Agent Playbo
 ## 1. Core rules (copied into each project's CLAUDE.md)
 
 <!-- core:start -->
+
 ### Development process (mandatory, no exceptions)
 
 Progress must be visible on GitHub at any moment. **No line of code without an open issue that is taken in progress.** Full playbook with commands and reasons: `docs/DEV_PROCESS.md`.
 
-**Structure.** Milestone = plan phase. Epic = issue labelled `phase-N`. Before a phase starts, split its epic into tasks; each task gets the `phase-N` label, the milestone, and is linked to the epic as a **sub-issue**. Task body: *Goal*, *Subtasks* (`- [ ]`), *Acceptance criteria* (`- [ ]`, checkable). A task bigger than ~1 day or with more than 5 subtasks is split into sub-issues. Findings, bugs and debts found on the way become new issues (`bug`, `tech-debt`, `security`) linked to the epic, never folded into the current task.
+**Structure.** Milestone = plan phase. Epic = issue labelled `phase-N`. Before a phase starts, split its epic into tasks; each task gets the `phase-N` label, the milestone, and is linked to the epic as a **sub-issue**. Task body: _Goal_, _Subtasks_ (`- [ ]`), _Acceptance criteria_ (`- [ ]`, checkable). A task bigger than ~1 day or with more than 5 subtasks is split into sub-issues. Findings, bugs and debts found on the way become new issues (`bug`, `tech-debt`, `security`) linked to the epic, never folded into the current task.
 
 **Task cycle.**
+
 1. **Take:** assignee `@me` + label `in-progress` + comment "Started" with the plan. Branch `N-short-slug` from a fresh `main`.
 2. **Do:** code with docstrings/comments; tick subtasks in the issue as they finish.
 3. **Verify locally:** lint, format check, tests, build, e2e; UI changes checked in the built-in browser with screenshots and no console errors.
@@ -27,7 +29,7 @@ Progress must be visible on GitHub at any moment. **No line of code without an o
 7. **Next task** only after step 6. One task in the working tree at a time.
 8. **Phase end:** all sub-issues closed → summary comment on the epic, close epic and milestone, visual review with Olexiy.
 
-**Definition of Done.** Acceptance criteria met *and verified* (not "should work") · new code covered by tests, all tests and linters green locally and in CI · UI checked in the browser, key screenshots, no console errors · no secrets, run data or debug junk in the diff · docs updated · PR merged, issue closed with a comment, `in-progress` removed, epic shows progress · found debts filed as issues.
+**Definition of Done.** Acceptance criteria met _and verified_ (not "should work") · new code covered by tests, all tests and linters green locally and in CI · UI checked in the browser, key screenshots, no console errors · no secrets, run data or debug junk in the diff · docs updated · PR merged, issue closed with a comment, `in-progress` removed, epic shows progress · found debts filed as issues.
 
 **Session start:** `git pull`, `gh issue list --state open`, read the handoff comment on the current epic. GitHub issues are the source of truth for "what next", not chat history.
 
@@ -50,19 +52,24 @@ Progress must be visible on GitHub at any moment. **No line of code without an o
 ## 3. Issue and PR formats
 
 Issue body:
+
 ```markdown
 Part of #<epic>.
 
 ## Goal
+
 <one or two sentences: what the user gets>
 
 ## Subtasks
+
 - [ ] …
 
 ## Acceptance criteria
+
 - [ ] <checkable statement>
 - [ ] No console errors.
 ```
+
 Comments on the issue: **"Started. Plan: …"** when taking it; **"Done in #PR. <what>. Checked: <unit N, e2e N, build, CI green>; visual check on <data>, no console errors."** when closing.
 
 PR body: `Closes #N (part of #epic)`, then bullets of what changed, a **Checks:** line with numbers, a **Visual check:** line for UI work. Title = what the user gets, not the file list.
@@ -70,6 +77,7 @@ PR body: `Closes #N (part of #epic)`, then bullets of what changed, a **Checks:*
 ## 4. CI and GitHub Actions minutes
 
 Private repos get 2000 free Actions minutes per month; every push re-runs CI. Rules from `model-proving-ground`:
+
 - CI runs on `pull_request` and `workflow_dispatch` only, **not on push to `main`** (a squash merge lands exactly what the PR checked).
 - `dorny/paths-filter` decides which jobs run (backend / frontend / suites); a docs-only PR runs no test jobs. Manual dispatch runs everything.
 - `concurrency: ci-${{ github.ref }}` with `cancel-in-progress: true`.
@@ -80,7 +88,7 @@ Private repos get 2000 free Actions minutes per month; every push re-runs CI. Ru
 ## 5. Testing
 
 - **Pick the cheapest layer that proves the thing** (examo): backend integration tests against the real DB/API are the TDD entry point; a thin e2e spec only confirms the wiring composes.
-- **Backend logic test-first:** write the spec, watch it fail *for the right reason*, then implement. A test that passes before the code exists tests the wrong thing.
+- **Backend logic test-first:** write the spec, watch it fail _for the right reason_, then implement. A test that passes before the code exists tests the wrong thing.
 - **No mock-heavy unit tests** of internals: they rot and duplicate e2e coverage. Mock at the boundary only (e.g. a `mock` provider that replays recorded streams so UI work needs no GPU or paid API).
 - **Keep e2e in sync with reality** in the same commit that changes behaviour. A green suite exercising stale flows lies.
 - e2e runs on its own ports with a temporary DB so it never touches dev data.
@@ -104,8 +112,8 @@ Private repos get 2000 free Actions minutes per month; every push re-runs CI. Ru
 - **Decisions first** in any report or long answer: a numbered list of what needs his decision or action, then what was done, then detail.
 - **Ask for what you need** (access, a manual step, data, a key) instead of engineering around a gap; put blocked items in the handoff as "blocked on Olexiy".
 - **Mode is set per project at intake:**
-  - *Claude leads* (default): Claude drives implementation through the task cycle.
-  - *Advisor* (hermes): Olexiy drives setup himself to learn. Claude runs infrastructure checks and answers, but does not run setup wizards, pre-write configs, or click through web UIs for him.
+  - _Claude leads_ (default): Claude drives implementation through the task cycle.
+  - _Advisor_ (hermes): Olexiy drives setup himself to learn. Claude runs infrastructure checks and answers, but does not run setup wizards, pre-write configs, or click through web UIs for him.
 - **Client projects:** never change approved visuals or client-supplied content on your own aesthetic judgment (nagelstudio UI freeze). Propose, get the OK, then change. Score-relevant fixes that touch visuals: surface the trade-off, let him decide.
 - Push back on wasteful plans; point out problems freely.
 
@@ -146,15 +154,15 @@ Private repos get 2000 free Actions minutes per month; every push re-runs CI. Ru
 
 ## 12. Sources
 
-| Repo (`C:\dev\…`) | What it contributed |
-|---|---|
+| Repo (`C:\dev\…`)                        | What it contributed                                                                                            |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `local-llm-bench` (model-proving-ground) | Full GitHub process, DoD, CI minutes rules, issue/PR formats, mock provider, judge subagent, GPU gate, handoff |
-| `examo` | Test layering and TDD order, ADR log, orchestrator + subagent autonomous run |
-| `devops_lab_1` | Persist plans before session end, web-search versions, breaking-change notes in CLAUDE.md |
-| `starfall-v2` | CLAUDE.md as short index, docs table "when to read" |
-| `finance` | Coach mode, "ask for what you need", commit guard hook, skills from repeated workflows |
-| `avigea`, `avigea_bot` | Deploy identity + target check, browser navigation permission, English-only code and branches |
-| `hermes` | Advisor mode, Docker isolation, Docker Desktop recovery |
-| `olexiydoes` | Update docs immediately as progress happens |
-| `nagelstudio_elena_kaiser` | Client UI freeze and content rules |
-| webdev `_template/lessons_learned.md` | Verify on the real deploy, one hard abort |
+| `examo`                                  | Test layering and TDD order, ADR log, orchestrator + subagent autonomous run                                   |
+| `devops_lab_1`                           | Persist plans before session end, web-search versions, breaking-change notes in CLAUDE.md                      |
+| `starfall-v2`                            | CLAUDE.md as short index, docs table "when to read"                                                            |
+| `finance`                                | Coach mode, "ask for what you need", commit guard hook, skills from repeated workflows                         |
+| `avigea`, `avigea_bot`                   | Deploy identity + target check, browser navigation permission, English-only code and branches                  |
+| `hermes`                                 | Advisor mode, Docker isolation, Docker Desktop recovery                                                        |
+| `olexiydoes`                             | Update docs immediately as progress happens                                                                    |
+| `nagelstudio_elena_kaiser`               | Client UI freeze and content rules                                                                             |
+| webdev `_template/lessons_learned.md`    | Verify on the real deploy, one hard abort                                                                      |

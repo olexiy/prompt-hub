@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "prompt-hub",
+  "main": "src/index.ts",
+  // Matches the bundled workerd runtime; bump together with wrangler.
+  "compatibility_date": "2026-10-19",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    // The built web app; /api/* goes to the Worker first, everything else is a static file or the SPA.
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  "observability": { "enabled": true },
+  // No anonymous usage telemetry from wrangler.
+  "send_metrics": false,
+}
