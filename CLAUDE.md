@@ -18,10 +18,10 @@ A web app for storing, versioning and reusing AI prompts: projects contain promp
 
 When Olexiy says «работай над проектом» / "work on the project", this is the procedure.
 
-## Current phase: 0 — Discovery
-No code yet. Phase 0 decides **whether** to build (market scan), **what** to build (feature catalogue, v1 scope), **how** (architecture, stack, hosting, security) and **in which order** (milestones and epics). Its tasks are documents; each PR is docs-only (no CI exists yet) and each decision task closes only after Olexiy's explicit decision, recorded in `docs/decisions.md`.
-- **Research quality:** name real products with links, versions, prices and licences checked online on the day; include user voices (Reddit, HN, GitHub issues) and concrete numbers, not framework summaries.
-- **Feature discussion is a dialogue:** present the catalogue in batches with a recommendation per item (must / should / could / won't for v1) and let Olexiy decide; don't settle v1 scope alone.
+## Current phase: 1 — Foundation (epic #10)
+Phase 0 is done: build decided, features and versions in `docs/FEATURES.md`, architecture in `docs/research/architecture.md`, phases 1–6 as milestones and epics. Phase 1 order: #16 mockups → #17 skeleton → #18 CI → #19 test harness → #20 DB schema → #21 environments (needs Olexiy's Cloudflare + Supabase accounts) → #22 single-user sign-in (invites in Phase 2) → #23 security baseline → #24 app shell → #25 vertical slice.
+- **The repo is public:** never commit secrets, personal data or run data; push protection and gitleaks are a safety net, not the plan.
+- **Feature talk with Olexiy:** he dictates by voice; collect ideas as a numbered list first, prioritise afterwards. Feature IDs in `docs/FEATURES.md` are stable references.
 
 ## Stack
 TypeScript end to end (decided 2026-10-23, #4): React 19 + Primer React (Vite) and a Hono API in one Cloudflare Worker; Supabase Postgres + Auth (EU) via Hyperdrive, Drizzle ORM; R2 for files from v1; pnpm monorepo `apps/web`, `apps/api`, `packages/core`, `packages/db`, `e2e`. Security standard OWASP ASVS 5.0 L2. Details: `docs/research/architecture.md`, ADRs in `docs/decisions.md`. Web-search current stable versions before adding or upgrading anything; respect the pnpm release-age gate.

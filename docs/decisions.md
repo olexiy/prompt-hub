@@ -2,6 +2,12 @@
 
 Newest first. Format: date — decision. *Why.* Alternatives considered.
 
+## 2026-10-23 — Phase 1 signs in one hand-created user; invites in Phase 2
+Olexiy asked whether invites belong in Phase 1. Phase 1 keeps real authentication (Supabase Auth, sign-up closed, Olexiy's account created by hand, HttpOnly cookie sessions) because the app is on a public URL; invites and Turnstile move to the MVP (Phase 2, feature 103). *Why:* a "default user" without sign-in would expose private prompts; invite flows are not needed while he is the only user. Alternative: no auth with a default user — rejected.
+
+## 2026-10-23 — Public repository, roadmap of six phases (#5)
+The repo is public from now on (Olexiy: names in the history are fine); CodeQL default setup, secret scanning with push protection, Dependabot alerts and security updates, private vulnerability reporting and a `main` ruleset (PR only, squash, no force push or deletion) are on. Phases: 1 Foundation, 2 MVP, 3 v1 ComfyUI workbench, 4 v2 Public and friends, 5 v3 AI and Pro, 6 v4 AI studio; product naming (#7) moved to Phase 5. *Why:* free GitHub security features need a public repo; phases mirror the agreed versions with a foundation phase first. Licence not chosen yet (all rights reserved until then).
+
 ## 2026-10-23 — ADR: TypeScript end to end on Cloudflare Workers (#4)
 Frontend React 19 + Primer React, backend Hono on Cloudflare Workers, one Worker serves UI and `/api`, shared Zod schemas and variable renderer in `packages/core`. *Why:* Olexiy left the stack to Claude with security first and €0; Workers have no server/OS/container to patch, no cold starts on the free plan, one language and one dependency tree, and Primer React gives GitHub's real components. Alternatives: Spring Boot 4.1 native on Google Cloud Run + Angular 22 (revision 1: third vendor, native-image build complexity, two supply chains); Supabase-only with Edge Functions + RLS (logic split, hard to test); Hetzner server (own OS patching, shared with other people's sites).
 

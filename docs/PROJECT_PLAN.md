@@ -71,10 +71,30 @@ Each phase = a GitHub milestone + epic issue (`phase-N`). Tasks are created when
 - [x] Market scan done; Olexiy decided build / fork / adopt. → **build**
 - [x] Feature catalogue with priorities; v1 scope agreed with Olexiy. → [FEATURES.md](FEATURES.md)
 - [x] Architecture, stack, hosting and security standard decided and recorded as ADRs.
-- [ ] Development phases exist as milestones + epics; Phase 1 split into tasks.
+- [x] Development phases exist as milestones + epics; Phase 1 split into tasks.
 
-### Phase 1 onwards
-Defined by the roadmap task. Phase 1 starts with the project skeleton, CI (see `ci-pattern.yml`) and the first vertical slice.
+### Phase 1 — Foundation · epic [#10](https://github.com/olexiy/prompt-hub/issues/10)
+**Goal:** a secure, deployable skeleton with one thin vertical slice in production.
+**Tasks (in order):** #16 mockups → #17 monorepo skeleton → #18 CI with security scans → #19 test harness → #20 DB schema v0 → #21 environments and deploys (needs Olexiy's Cloudflare + Supabase accounts) → #22 single-user sign-in (sign-up closed; invites come in Phase 2) → #23 security baseline → #24 app shell → #25 vertical slice.
+**Exit criteria:** commands documented; CI green and required on `main`; preview and production deploys work; sign-in on production with sign-up closed; vertical slice project → prompt → variables → copy in production; authorisation tests; mockups approved.
+
+### Phase 2 — MVP · epic [#11](https://github.com/olexiy/prompt-hub/issues/11)
+**Goal:** "my prompts, online, safely" — Olexiy uses it daily instead of text files.
+**Exit criteria:** all MVP features in production with tests; comfy-h3-studio and vault prompts imported; backup restore tested; `/security-review` before release; a week of daily use.
+
+### Phase 3 — v1 ComfyUI workbench · epic [#12](https://github.com/olexiy/prompt-hub/issues/12)
+**Goal:** the best place for ComfyUI image/video prompts (result files, Comfy Extractor, sections, templates).
+
+### Phase 4 — v2 Public and friends · epic [#13](https://github.com/olexiy/prompt-hub/issues/13)
+**Goal:** friends use it; public projects with comments, stars, forks, moderation, 2FA.
+
+### Phase 5 — v3 AI and Pro · epic [#14](https://github.com/olexiy/prompt-hub/issues/14)
+**Goal:** plans and limits enforced, first AI tools, legal pages, final product name (#7).
+
+### Phase 6 — v4 AI studio · epic [#15](https://github.com/olexiy/prompt-hub/issues/15)
+**Goal:** AI-assisted authoring (screenwriter, variants, prompt from image), semantic search.
+
+Tasks for phases 2–6 are created when the phase starts; each epic lists its feature IDs from [FEATURES.md](FEATURES.md). Stopping after any phase is acceptable.
 
 ## 4. Risks
 | Risk | Mitigation |
@@ -87,4 +107,6 @@ Defined by the roadmap task. Phase 1 starts with the project skeleton, CI (see `
 ## 5. Status
 | Phase | State |
 |---|---|
-| 0 — Discovery | in progress — build decided, features and versions agreed, architecture decided; roadmap next |
+| 0 — Discovery | done — build, features and versions, architecture, roadmap |
+| 1 — Foundation | next |
+| 2–6 | planned |
