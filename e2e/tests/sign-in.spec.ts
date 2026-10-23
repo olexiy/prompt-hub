@@ -1,10 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { ownClientIp } from "./users";
 
 const user = JSON.parse(readFileSync(".auth/user.json", { encoding: "utf8" })) as {
   email: string;
   password: string;
 };
+
+test.beforeEach(async ({ page }) => {
+  await ownClientIp(page);
+});
 
 test("sign in, see the handle, keep tokens away from scripts, sign out", async ({ page }) => {
   const errors: string[] = [];
@@ -18,13 +23,14 @@ test("sign in, see the handle, keep tokens away from scripts, sign out", async (
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page.getByText(/Signed in as/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No projects yet" })).toBeVisible();
   expect(await page.evaluate(() => document.cookie)).toBe("");
 
   await page.reload();
+  await page.getByRole("button", { name: "Account" }).click();
   await expect(page.getByText(/Signed in as/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { name: "Sign in to Prompt Hub" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Sign in to Prompt Hub" })).toBeVisible();

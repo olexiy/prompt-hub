@@ -1,12 +1,14 @@
-import { APP_NAME, type HealthResponse } from "@prompt-hub/core";
+import { APP_NAME, LOCALES, THEMES, type HealthResponse } from "@prompt-hub/core";
+import { appUser, eq } from "@prompt-hub/db";
 import { Hono } from "hono";
+import { z } from "zod";
 import type { AppEnv } from "./app-env";
 import { requireUser, sameOrigin } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
 import { handleError, handleNotFound } from "./security/errors";
 import { securityHeaders } from "./security/headers";
 import { limitWrites } from "./security/rate-limit";
-import { limitBody } from "./security/validate";
+import { limitBody, parseJson } from "./security/validate";
 
 /**
  * The single Worker: REST API under /api, static web app for everything else
@@ -27,6 +29,26 @@ app.route("/auth", authRoutes);
 
 app.get("/me", requireUser, (c) => {
   const { id, handle, displayName, locale, theme } = c.get("user");
+  return c.json({ id, handle, displayName, locale, theme });
+});
+
+/** Preferences the user may change themselves; anything else in the body is rejected. */
+const mePatch = z
+  .strictObject({ locale: z.enum(LOCALES), theme: z.enum(THEMES) })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
+
+app.patch("/me", requireUser, async (c) => {
+  const changes = await parseJson(c, mePatch, "Unknown language or theme");
+  // Scoped by the signed-in user's id only: there is no way to address another user here.
+  const [row] = await c
+    .get("db")
+    .update(appUser)
+    .set(changes)
+    .where(eq(appUser.id, c.get("user").id))
+    .returning();
+  if (!row) return c.json({ error: "Not found" }, 404);
+  const { id, handle, displayName, locale, theme } = row;
   return c.json({ id, handle, displayName, locale, theme });
 });
 

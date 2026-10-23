@@ -1,3 +1,218 @@
+/*
+ * App-wide layout CSS (a file, not inline: the CSP allows no inline <style>). Colours and sizes
+ * come from Primer's CSS variables so light and dark themes work. Layout follows
+ * docs/mockups/index.html (header, dashboard, account).
+ */
 body {
   margin: 0;
+}
+
+.ph-root {
+  min-height: 100vh;
+  background-color: var(--bgColor-default);
+}
+
+.ph-center {
+  display: grid;
+  place-items: center;
+  padding: 64px;
+}
+
+/* Header */
+.ph-header {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--bgColor-muted);
+  border-bottom: 1px solid var(--borderColor-default);
+}
+.ph-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.ph-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fgColor-default);
+  font-weight: 600;
+  text-decoration: none;
+}
+.ph-logo-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--fgColor-default);
+  color: var(--bgColor-default);
+  display: grid;
+  place-items: center;
+  font: 600 13px var(--fontStack-monospace);
+}
+.ph-crumb {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.ph-crumb a {
+  color: var(--fgColor-default);
+}
+.ph-crumb-sep {
+  color: var(--fgColor-muted);
+}
+.ph-search {
+  margin-left: auto;
+  width: 280px;
+  min-width: 0;
+}
+.ph-kbd {
+  font: 11px var(--fontStack-monospace);
+  border: 1px solid var(--borderColor-default);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.ph-avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--borderColor-default);
+  background: var(--bgColor-accent-muted);
+  color: var(--fgColor-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Page */
+.ph-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+.ph-h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.ph-h3 {
+  font-size: 20px;
+  margin: 8px 0 0;
+}
+.ph-muted {
+  color: var(--fgColor-muted);
+}
+.ph-mono {
+  font-family: var(--fontStack-monospace);
+}
+.ph-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ph-grow {
+  flex: 1 1 auto;
+}
+
+/* Dashboard */
+.ph-dash {
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.ph-side {
+  display: grid;
+  gap: 12px;
+}
+.ph-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ph-main-col {
+  min-width: 0;
+}
+.ph-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ph-blank {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 48px 16px;
+  margin-top: 16px;
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  color: var(--fgColor-muted);
+}
+.ph-blank p {
+  max-width: 480px;
+  margin: 4px 0 8px;
+}
+
+/* Settings */
+.ph-settings {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 640px);
+  gap: 32px;
+  align-items: start;
+}
+.ph-settings-nav {
+  display: grid;
+  gap: 2px;
+}
+.ph-settings-nav a {
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: var(--fgColor-default);
+  text-decoration: none;
+}
+.ph-settings-nav a:hover {
+  background: var(--bgColor-neutral-muted);
+}
+.ph-settings-main,
+.ph-form {
+  display: grid;
+  gap: 16px;
+}
+.ph-settings-main > h1,
+.ph-settings-main > h2 {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--borderColor-default);
+}
+.ph-settings-main > h2 {
+  margin-top: 16px;
+}
+
+@media (max-width: 860px) {
+  .ph-dash,
+  .ph-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ph-search {
+    width: auto;
+    flex: 1 1 auto;
+  }
+  .ph-kbd {
+    display: none;
+  }
+  .ph-side {
+    order: 2;
+  }
+}
+@media (max-width: 520px) {
+  .ph-crumb,
+  .ph-logo-text {
+    display: none;
+  }
 }

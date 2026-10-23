@@ -2,6 +2,13 @@
 
 Observations that are not decisions: measurements, surprises, things that did not work. Newest first, dated.
 
+## 2026-10-23 — App shell notes (#24)
+
+- **No router or i18n library needed** at this size: `useSyncExternalStore` over `popstate` plus a typed message catalog (TypeScript enforces every key in en/ru/de) cover routing and translations; URL parsing lives in `packages/core` with unit tests.
+- **Primer `ActionList.GroupHeading` inside an `ActionMenu` must not get `as="h2"`**: it throws an invariant at runtime and blanks the app. Only an e2e that opens the menu caught it.
+- **Primer `ThemeProvider` takes `colorMode` `auto | light | dark`** and marks its element with `data-color-mode`, which the e2e uses to check the theme.
+- The per-IP sign-in limit (10/min) tripped in e2e as soon as specs signed in more often; `page.setExtraHTTPHeaders({"cf-connecting-ip": …})` gives each page its own key under `wrangler dev`.
+
 ## 2026-10-23 — First cloud environment (#21)
 
 - Supabase CLI `projects create` works non-interactively with `--org-id --region --db-password`; new projects sign JWTs with ES256 (JWKS), so the Worker's verification works unchanged.

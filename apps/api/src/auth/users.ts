@@ -21,17 +21,19 @@ async function freeHandle(db: Db, email: string): Promise<string> {
 }
 
 export async function ensureAppUser(db: Db, claims: AccessClaims): Promise<AppUser> {
-  const [existing] = await db.select().from(appUser).where(eq(appUser.id, claims.sub));
-  if (existing) return existing;
-  const handle = await freeHandle(db, claims.email);
-  const [created] = await db
-    .insert(appUser)
-    .values({ id: claims.sub, handle })
-    .onConflictDoNothing({ target: appUser.id })
-    .returning();
-  if (created) return created;
-  // A parallel first request created it.
-  const [row] = await db.select().from(appUser).where(eq(appUser.id, claims.sub));
-  if (!row) throw new Error("app_user missing after insert");
-  return row;
+  // Parallel first requests of a new user race here: both may pick the same free handle. Any
+  // conflict (id or handle) is ignored, then the row is read back by id; if another user took
+  // the handle in between, the next attempt picks a new one.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const [existing] = await db.select().from(appUser).where(eq(appUser.id, claims.sub));
+    if (existing) return existing;
+    const handle = await freeHandle(db, claims.email);
+    const [created] = await db
+      .insert(appUser)
+      .values({ id: claims.sub, handle })
+      .onConflictDoNothing()
+      .returning();
+    if (created) return created;
+  }
+  throw new Error("app_user could not be created");
 }
