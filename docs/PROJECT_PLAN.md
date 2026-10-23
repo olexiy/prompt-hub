@@ -6,8 +6,8 @@ Related: [brief.md](brief.md) · [DEV_PROCESS.md](DEV_PROCESS.md) · [decisions.
 
 ## Open questions
 1. **Hosting budget** — monthly ceiling for hosting + DB + auth. Not answered at bootstrap; ask in the architecture task. Recommendation to discuss: free tiers where they are not a trap, a hard ceiling around €10–25/month.
-2. **Build, fork or adopt** — answered by the market scan.
-3. **Name** — "PromptHub" may be taken by an existing product; check in the market scan, rename before anything public.
+2. ~~**Build, fork or adopt**~~ — **build** (2026-10-23, see [research/market-scan.md](research/market-scan.md)).
+3. **Name** — "PromptHub" is taken (prompthub.us, same niche); rename before anything public. Candidates: Promptyard, Promptloft, Prompt Atelier (domains and trademarks not checked yet).
 
 ## 1. Goals and non-goals
 
@@ -32,7 +32,7 @@ Each phase = a GitHub milestone + epic issue (`phase-N`). Tasks are created when
 **Goal:** decide whether, what, how and in which order to build.
 **Tasks:** market scan (build vs. adopt) · feature catalogue and v1 scope · architecture and stack · roadmap on GitHub.
 **Exit criteria:**
-- [ ] Market scan done; Olexiy decided build / fork / adopt.
+- [x] Market scan done; Olexiy decided build / fork / adopt. → **build**
 - [ ] Feature catalogue with priorities; v1 scope agreed with Olexiy.
 - [ ] Architecture, stack, hosting and security standard decided and recorded as ADRs.
 - [ ] Development phases exist as milestones + epics; Phase 1 split into tasks.
@@ -51,4 +51,4 @@ Defined by the roadmap task. Phase 1 starts with the project skeleton, CI (see `
 ## 5. Status
 | Phase | State |
 |---|---|
-| 0 — Discovery | not started |
+| 0 — Discovery | in progress — market scan done (build) |
