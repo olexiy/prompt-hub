@@ -125,6 +125,8 @@ export const prompt = pgTable(
     type: text("type").notNull().default("TEXT"),
     /** The live version; null only between creating the prompt and its first version. */
     currentVersionId: uuid("current_version_id"),
+    /** Highest version number ever given; numbers are not reused after deletes (#49). */
+    lastVersionNumber: integer("last_version_number").notNull().default(0),
     /** Free key–value meta fields (feature 27). */
     meta: jsonb("meta").$type<Record<string, string>>().notNull().default({}),
     createdAt: createdAt(),

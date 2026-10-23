@@ -15,6 +15,13 @@
       "when": 1792771695241,
       "tag": "0001_plan_limits_and_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792786290223,
+      "tag": "0002_prompt_last_version_number",
+      "breakpoints": true
     }
   ]
 }

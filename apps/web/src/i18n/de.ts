@@ -105,4 +105,18 @@ export const de: Messages = {
   "prompt.delete": "Prompt löschen",
   "prompt.confirmDelete":
     "Prompt „{name}“ mit allen Versionen löschen? Das lässt sich nicht rückgängig machen.",
+  "prompt.edit": "Bearbeiten",
+  "prompt.history": "Verlauf",
+  "prompt.saveVersion": "Als neue Version speichern",
+  "prompt.message": "Was hat sich geändert (optional)",
+  "prompt.defaultLabel": "Standard",
+  "prompt.descriptionLabel": "Beschreibung",
+  "history.onlyYou": "Nur du siehst den Verlauf.",
+  "history.noMessage": "keine Beschreibung",
+  "history.view": "Anzeigen",
+  "history.hide": "Ausblenden",
+  "history.restore": "Wiederherstellen",
+  "history.delete": "Version löschen",
+  "history.deleteN": "v{n} löschen",
+  "history.confirmDelete": "v{n} endgültig löschen? Das lässt sich nicht rückgängig machen.",
 };

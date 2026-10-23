@@ -35,9 +35,17 @@ export const promptCreateSchema = z.strictObject({
 });
 export type PromptCreate = z.input<typeof promptCreateSchema>;
 
-/** PATCH on a path: rename a folder (`name`) or move a prompt into another folder (`to`). */
+/**
+ * PATCH on a path, exactly one change: rename a folder (`name`); move a prompt into another
+ * folder (`to`), retitle it (`title`) or change its URL slug (`slug`).
+ */
 export const itemPatchSchema = z
-  .strictObject({ name: z.string().trim().min(1).max(100), to: folderPathSchema })
+  .strictObject({
+    name: z.string().trim().min(1).max(100),
+    to: folderPathSchema,
+    title: z.string().trim().min(1).max(200),
+    slug,
+  })
   .partial()
   .refine((v) => Object.keys(v).length === 1, "Exactly one change");
 export type ItemPatch = z.input<typeof itemPatchSchema>;
@@ -57,6 +65,29 @@ export interface PromptSummary {
   slug: string;
   title: string;
   updatedAt: string;
+}
+
+/** A new version: the full new state of the prompt, or `restore` an old version as the newest. */
+export const versionCreateSchema = z.union([
+  z.strictObject({
+    body: z.string().max(MAX_PROMPT_BODY),
+    variables: variableDefsSchema.default([]),
+    message: z.string().trim().max(500).default(""),
+  }),
+  z.strictObject({ restore: z.number().int().positive() }),
+]);
+export type VersionCreate = z.input<typeof versionCreateSchema>;
+
+export interface VersionSummary {
+  number: number;
+  message: string;
+  createdAt: string;
+  current: boolean;
+}
+
+export interface VersionDetail extends Omit<VersionSummary, "current"> {
+  body: string;
+  variables: VariableDef[];
 }
 
 export interface FolderSummary {
@@ -80,12 +111,10 @@ export interface PromptDetail extends PromptSummary {
   kind: "prompt";
   /** Folder path of the prompt; [] at the project root. */
   folder: string[];
-  version: {
-    number: number;
-    body: string;
-    variables: VariableDef[];
-    createdAt: string;
-  };
+  /** Number of stored versions (history size). */
+  versionCount: number;
+  /** The current (live) version. */
+  version: VersionDetail;
 }
 
 /** What `GET /api/projects/:handle/:project/path/*` answers. */

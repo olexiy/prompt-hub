@@ -282,6 +282,18 @@ body {
   color: var(--fgColor-muted);
 }
 
+.ph-fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--borderColor-muted);
+  border-radius: 6px;
+}
+.ph-commit {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 /* Project page */
 .ph-proj {
   display: grid;
