@@ -82,4 +82,4 @@ Also seen, not shortlisted: LangSmith Prompt Hub (inside LangSmith, self-host on
 - prompts.chat: CC0/licence field on public prompts, MCP server and CLI access.
 
 ## Decision
-*Pending Olexiy's decision: build / fork / adopt.* Recorded in `docs/decisions.md` once made.
+**2026-10-23: build** — Olexiy's decision, recorded in [decisions.md](../decisions.md).

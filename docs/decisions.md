@@ -2,6 +2,9 @@
 
 Newest first. Format: date — decision. *Why.* Alternatives considered.
 
+## 2026-10-23 — Build our own (market scan, #2)
+Olexiy decided to build Prompt Hub rather than adopt or fork an existing product. *Why:* no product combines GitHub-like public/private projects, per-prompt versions, variables with one-click rendered copy, comments/meta and import; image/video (ComfyUI) prompts are unserved; data ownership and portfolio value matter. Alternatives: adopt PromptHub (prompthub.us, SaaS only, private prompts paid) — rejected; fork prompts.chat (no versioning/variables/private projects) or Langfuse (prompt module of an observability platform) — rejected. Details: [research/market-scan.md](research/market-scan.md). The name "PromptHub" is taken; renaming is decided before anything goes public.
+
 ## 2026-10-23 — Discovery before building
 Phase 0 runs a market scan, feature catalogue, architecture and roadmap before any code. *Why:* Olexiy wants to know whether building is worth it at all, and to agree features before architecture. Alternative: start coding an MVP directly — rejected.
 
