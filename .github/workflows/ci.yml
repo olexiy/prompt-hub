@@ -74,6 +74,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
+      - name: Migrations match the schema
+        run: pnpm db:generate && git diff --exit-code -- packages/db/migrations
       # Build first: the API tests load wrangler.jsonc, whose assets directory is the web build.
       - run: pnpm build
       - run: pnpm test
