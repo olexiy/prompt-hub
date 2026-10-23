@@ -20,7 +20,7 @@ Supabase Free in the EU: Postgres (prod + staging projects) and Auth; Drizzle OR
 
 ## 2026-10-23 — ADR: Security standard OWASP ASVS 5.0 Level 2
 
-Controls from the MVP: invite-only sign-up, Turnstile, HttpOnly cookie sessions, JWT verification via JWKS, server-side authorisation per request with "other user → 404" tests, Zod validation, strict CSP and security headers, rate limiting, secrets only in Wrangler/GitHub secrets, nightly backups. Supply chain: pnpm release-age gate and blocked install scripts, Dependabot, SHA-pinned actions, no `pull_request_target`, gitleaks, OSV-Scanner, Semgrep; daily scheduled scans; `/security-review` before production deploys touching auth or input. _Why:_ Olexiy treats security as a top priority given AI-assisted attacks; npm worm waves in 2025–2026.
+Controls from the MVP: invite-only sign-up, Turnstile, HttpOnly cookie sessions, JWT verification via JWKS, server-side authorisation per request with "other user → 404" tests, Zod validation, strict CSP and security headers, rate limiting, secrets only in Wrangler/GitHub secrets, nightly backups. Supply chain: pnpm release-age gate and blocked install scripts, Dependabot, SHA-pinned actions, no `pull_request_target`, gitleaks, OSV-Scanner, CodeQL (Semgrep dropped in #18 once the repo was public); daily scheduled scans; `/security-review` before production deploys touching auth or input. _Why:_ Olexiy treats security as a top priority given AI-assisted attacks; npm worm waves in 2025–2026.
 
 ## 2026-10-23 — ADR: Monorepo, modular monolith, CI/CD
 
