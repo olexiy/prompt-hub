@@ -1,11 +1,12 @@
 /**
  * Shared domain code used by both the web app and the API: schemas, types and the
- * `{{variable}}` renderer. Filled by later tasks (#20 schema, #25 renderer).
+ * `{{variable}}` renderer.
  */
 
 export * from "./id";
 export * from "./prefs";
 export * from "./routes";
+export * from "./variables";
 export * from "./slug";
 
 /** Product name shown in the UI and in API responses until the final name is chosen (#7). */
