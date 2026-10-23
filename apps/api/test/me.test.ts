@@ -25,6 +25,42 @@ async function signIn(): Promise<string> {
     .join("; ");
 }
 
+const cookiesOf = (res: Response) =>
+  res.headers
+    .getSetCookie()
+    .map((c) => c.split(";")[0])
+    .join("; ");
+
+/**
+ * A brand-new Supabase user for tests that change account state or need a first request:
+ * the suite's shared user must keep its defaults for the other test files running in parallel.
+ */
+async function withNewUser(run: (signIn: () => Promise<string>) => Promise<void>) {
+  const admin = {
+    apikey: env.SUPABASE_SECRET_KEY,
+    authorization: `Bearer ${env.SUPABASE_SECRET_KEY}`,
+  };
+  const email = `me-${crypto.randomUUID()}@example.test`;
+  const password = `pw-${crypto.randomUUID()}`;
+  const created = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: { ...admin, "content-type": "application/json" },
+    body: JSON.stringify({ email, password, email_confirm: true }),
+  });
+  expect(created.status).toBe(200);
+  const { id } = await created.json<{ id: string }>();
+  try {
+    await run(async () =>
+      cookiesOf(await request("POST", "/api/auth/sign-in", { email, password })),
+    );
+  } finally {
+    await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${id}`, {
+      method: "DELETE",
+      headers: admin,
+    });
+  }
+}
+
 interface Me {
   handle: string;
   locale: string;
@@ -33,21 +69,22 @@ interface Me {
 
 describe("PATCH /api/me", () => {
   it("saves language and theme and returns them from GET /api/me", async () => {
-    const cookie = await signIn();
-    const res = await request("PATCH", "/api/me", { locale: "de", theme: "dark" }, cookie);
-    expect(res.status).toBe(200);
-    expect(await res.json<Me>()).toMatchObject({ locale: "de", theme: "dark" });
+    await withNewUser(async (signInNew) => {
+      const cookie = await signInNew();
+      const res = await request("PATCH", "/api/me", { locale: "de", theme: "dark" }, cookie);
+      expect(res.status).toBe(200);
+      expect(await res.json<Me>()).toMatchObject({ locale: "de", theme: "dark" });
 
-    const me = await (await request("GET", "/api/me", undefined, cookie)).json<Me>();
-    expect(me).toMatchObject({ locale: "de", theme: "dark" });
+      const me = await (await request("GET", "/api/me", undefined, cookie)).json<Me>();
+      expect(me).toMatchObject({ locale: "de", theme: "dark" });
 
-    // Partial update keeps the other field.
-    await request("PATCH", "/api/me", { locale: "ru" }, cookie);
-    expect(await (await request("GET", "/api/me", undefined, cookie)).json<Me>()).toMatchObject({
-      locale: "ru",
-      theme: "dark",
+      // Partial update keeps the other field.
+      await request("PATCH", "/api/me", { locale: "ru" }, cookie);
+      expect(await (await request("GET", "/api/me", undefined, cookie)).json<Me>()).toMatchObject({
+        locale: "ru",
+        theme: "dark",
+      });
     });
-    await request("PATCH", "/api/me", { locale: "en", theme: "system" }, cookie);
   });
 
   it.each([
@@ -70,37 +107,14 @@ describe("PATCH /api/me", () => {
 
 describe("first request of a new user", () => {
   it("parallel first requests create one app_user without errors", async () => {
-    // A brand-new Supabase user, so the requests below are its very first ones.
-    const admin = {
-      apikey: env.SUPABASE_SECRET_KEY,
-      authorization: `Bearer ${env.SUPABASE_SECRET_KEY}`,
-    };
-    const email = `race-${crypto.randomUUID()}@example.test`;
-    const password = `pw-${crypto.randomUUID()}`;
-    const created = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
-      method: "POST",
-      headers: { ...admin, "content-type": "application/json" },
-      body: JSON.stringify({ email, password, email_confirm: true }),
-    });
-    expect(created.status).toBe(200);
-    const { id } = await created.json<{ id: string }>();
-    try {
-      const res = await request("POST", "/api/auth/sign-in", { email, password });
-      const cookie = res.headers
-        .getSetCookie()
-        .map((c) => c.split(";")[0])
-        .join("; ");
+    await withNewUser(async (signInNew) => {
+      const cookie = await signInNew();
       const results = await Promise.all(
         Array.from({ length: 5 }, () => request("GET", "/api/me", undefined, cookie)),
       );
       expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200]);
       const handles = await Promise.all(results.map((r) => r.json<Me>().then((m) => m.handle)));
       expect(new Set(handles).size).toBe(1);
-    } finally {
-      await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${id}`, {
-        method: "DELETE",
-        headers: admin,
-      });
-    }
+    });
   });
 });
