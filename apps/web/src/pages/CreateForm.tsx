@@ -11,12 +11,15 @@ import { useI18n } from "../i18n";
 export function CreateForm({
   kind,
   action,
+  extra = {},
   urlPrefix,
   onCreated,
   onCancel,
 }: {
-  kind: "project" | "prompt";
+  kind: "project" | "folder" | "prompt";
   action: string;
+  /** Fields sent along, e.g. the folder a prompt or subfolder goes into. */
+  extra?: Record<string, unknown>;
   urlPrefix: string;
   onCreated: (slug: string) => void;
   onCancel: () => void;
@@ -33,10 +36,13 @@ export function CreateForm({
   async function submit() {
     setBusy(true);
     setError(null);
-    const body =
+    const fields =
       kind === "project"
         ? { slug: effectiveSlug, name, description: text }
-        : { slug: effectiveSlug, title: name, body: text };
+        : kind === "folder"
+          ? { slug: effectiveSlug, name }
+          : { slug: effectiveSlug, title: name, body: text };
+    const body = { ...extra, ...fields };
     try {
       await post(action, body);
       onCreated(effectiveSlug);
@@ -59,12 +65,12 @@ export function CreateForm({
       )}
       <FormControl required>
         <FormControl.Label>
-          {kind === "project" ? t("form.name") : t("form.title")}
+          {kind === "prompt" ? t("form.title") : t("form.name")}
         </FormControl.Label>
         <TextInput
           block
           value={name}
-          maxLength={kind === "project" ? 100 : 200}
+          maxLength={kind === "prompt" ? 200 : 100}
           onChange={(e) => {
             setName(e.target.value);
           }}
@@ -86,21 +92,23 @@ export function CreateForm({
           {t("form.slugHint", { url: `${urlPrefix}/${effectiveSlug || "…"}` })}
         </FormControl.Caption>
       </FormControl>
-      <FormControl required={kind === "prompt"}>
-        <FormControl.Label>
-          {kind === "project" ? t("form.description") : t("form.body")}
-        </FormControl.Label>
-        <Textarea
-          block
-          className={kind === "prompt" ? "ph-mono" : ""}
-          rows={kind === "prompt" ? 10 : 3}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-          }}
-        />
-        {kind === "prompt" && <FormControl.Caption>{t("form.bodyHint")}</FormControl.Caption>}
-      </FormControl>
+      {kind !== "folder" && (
+        <FormControl required={kind === "prompt"}>
+          <FormControl.Label>
+            {kind === "project" ? t("form.description") : t("form.body")}
+          </FormControl.Label>
+          <Textarea
+            block
+            className={kind === "prompt" ? "ph-mono" : ""}
+            rows={kind === "prompt" ? 10 : 3}
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+            }}
+          />
+          {kind === "prompt" && <FormControl.Caption>{t("form.bodyHint")}</FormControl.Caption>}
+        </FormControl>
+      )}
       <div className="ph-row">
         <Button type="submit" variant="primary" loading={busy}>
           {t("form.create")}

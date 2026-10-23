@@ -55,8 +55,13 @@ test("language and theme switch, persist across reloads and sessions", async ({ 
   expect(await colorMode(page)).toBe("dark");
 
   // The header toggle cycles dark → system and saves too.
+  // The UI switches at once; the save runs in the background, so wait for it before reloading.
+  const saved = page.waitForResponse(
+    (r) => r.url().endsWith("/api/me") && r.request().method() === "PATCH",
+  );
   await page.getByRole("button", { name: /Сменить тему/ }).click();
   await expect(page.getByRole("button", { name: /Тема: Системная/ })).toBeVisible();
+  expect((await saved).status()).toBe(200);
   await page.reload();
   await expect(page.getByRole("button", { name: /Тема: Системная/ })).toBeVisible();
   expect(await colorMode(page)).toBe("auto");
@@ -81,25 +86,36 @@ test("GitHub-like URLs render the shell with breadcrumbs; unknown paths say not 
   const errors = collectErrors(page);
   await signIn(page);
 
-  // An own project, created through the API as the page would.
+  // An own project with a nested folder and a prompt, created through the API.
   const handle = await page.evaluate(async () => {
     const me = (await (await fetch("/api/me")).json()) as { handle: string };
-    await fetch("/api/projects", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ slug: "comfy-h3", name: "Comfy H3" }),
+    const post = (url: string, body: unknown) =>
+      fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    const base = `/api/projects/${me.handle}/comfy-h3`;
+    await post("/api/projects", { slug: "comfy-h3", name: "Comfy H3" });
+    await post(`${base}/folders`, { slug: "shots", name: "Shots" });
+    await post(`${base}/prompts`, {
+      folder: ["shots"],
+      slug: "bus-stop-9s",
+      title: "Bus stop",
+      body: "x",
     });
     return me.handle;
   });
 
-  // Folders come later: a deeper path is a placeholder inside the shell.
   await page.goto(`/${handle}/comfy-h3/shots/bus-stop-9s`);
-  await expect(page.getByRole("heading", { name: "Coming soon" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bus stop" })).toBeVisible();
   const crumb = page.getByRole("navigation", { name: "Breadcrumb" });
   if (await crumb.isVisible()) {
     await expect(crumb.getByRole("link")).toHaveText([handle, "comfy-h3", "shots", "bus-stop-9s"]);
+    await crumb.getByRole("link", { name: "shots" }).click();
+    await expect(page).toHaveURL(new RegExp(`/${handle}/comfy-h3/shots$`));
+    await expect(page.getByRole("heading", { name: "Shots" })).toBeVisible();
     await crumb.getByRole("link", { name: "comfy-h3" }).click();
-    await expect(page).toHaveURL(new RegExp(`/${handle}/comfy-h3$`));
     await expect(page.getByRole("heading", { name: "Prompts" })).toBeVisible();
   }
 

@@ -28,6 +28,15 @@ export async function patch<T>(path: string, body: unknown): Promise<T> {
   return send<T>("PATCH", path, body);
 }
 
+export async function del(path: string): Promise<void> {
+  const res = await fetch(path, {
+    method: "DELETE",
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+  });
+  if (!res.ok) await handle(res);
+}
+
 async function send<T>(method: string, path: string, body: unknown): Promise<T> {
   return handle<T>(
     await fetch(path, {

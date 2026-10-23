@@ -91,4 +91,18 @@ export const de: Messages = {
   "prompt.copied": "In die Zwischenablage kopiert",
   "prompt.copyFailed": "Kopieren fehlgeschlagen. Markiere den Text und kopiere ihn von Hand.",
   "error.load": "Laden fehlgeschlagen. Bitte erneut versuchen.",
+  "folder.new": "Neuer Ordner",
+  "folder.rename": "Umbenennen",
+  "folder.save": "Speichern",
+  "folder.delete": "Ordner löschen",
+  "folder.confirmDelete":
+    "Ordner „{name}“ mit allem Inhalt löschen? Das lässt sich nicht rückgängig machen.",
+  "folder.empty": "Dieser Ordner ist leer.",
+  "item.delete": "Löschen",
+  "item.cancel": "Abbrechen",
+  "prompt.move": "Verschieben",
+  "prompt.root": "Projektwurzel",
+  "prompt.delete": "Prompt löschen",
+  "prompt.confirmDelete":
+    "Prompt „{name}“ mit allen Versionen löschen? Das lässt sich nicht rückgängig machen.",
 };
