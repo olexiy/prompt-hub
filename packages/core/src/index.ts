@@ -5,6 +5,7 @@
 
 export * from "./id";
 export * from "./prefs";
+export * from "./projects";
 export * from "./routes";
 export * from "./variables";
 export * from "./slug";

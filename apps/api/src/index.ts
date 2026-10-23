@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { AppEnv } from "./app-env";
 import { requireUser, sameOrigin } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
+import { projectRoutes } from "./projects/routes";
 import { handleError, handleNotFound } from "./security/errors";
 import { securityHeaders } from "./security/headers";
 import { limitWrites } from "./security/rate-limit";
@@ -26,6 +27,7 @@ app.use("*", limitWrites);
 app.get("/health", (c) => c.json({ status: "ok", app: APP_NAME } satisfies HealthResponse));
 
 app.route("/auth", authRoutes);
+app.route("/projects", projectRoutes);
 
 app.get("/me", requireUser, (c) => {
   const { id, handle, displayName, locale, theme } = c.get("user");

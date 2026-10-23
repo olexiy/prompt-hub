@@ -1,64 +1,10 @@
-import { env, exports } from "cloudflare:workers";
 import { describe, expect, inject, it } from "vitest";
-
-const ORIGIN = "http://localhost";
-
-function request(method: string, path: string, body?: unknown, cookie?: string) {
-  return exports.default.fetch(`${ORIGIN}${path}`, {
-    method,
-    headers: {
-      origin: ORIGIN,
-      "content-type": "application/json",
-      "cf-connecting-ip": `198.51.100.${String(Math.floor(Math.random() * 250))}`,
-      ...(cookie ? { cookie } : {}),
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-}
+import { cookiesOf, request, withNewUser } from "./helpers";
 
 async function signIn(): Promise<string> {
   const res = await request("POST", "/api/auth/sign-in", inject("testUser"));
   expect(res.status).toBe(200);
-  return res.headers
-    .getSetCookie()
-    .map((c) => c.split(";")[0])
-    .join("; ");
-}
-
-const cookiesOf = (res: Response) =>
-  res.headers
-    .getSetCookie()
-    .map((c) => c.split(";")[0])
-    .join("; ");
-
-/**
- * A brand-new Supabase user for tests that change account state or need a first request:
- * the suite's shared user must keep its defaults for the other test files running in parallel.
- */
-async function withNewUser(run: (signIn: () => Promise<string>) => Promise<void>) {
-  const admin = {
-    apikey: env.SUPABASE_SECRET_KEY,
-    authorization: `Bearer ${env.SUPABASE_SECRET_KEY}`,
-  };
-  const email = `me-${crypto.randomUUID()}@example.test`;
-  const password = `pw-${crypto.randomUUID()}`;
-  const created = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
-    method: "POST",
-    headers: { ...admin, "content-type": "application/json" },
-    body: JSON.stringify({ email, password, email_confirm: true }),
-  });
-  expect(created.status).toBe(200);
-  const { id } = await created.json<{ id: string }>();
-  try {
-    await run(async () =>
-      cookiesOf(await request("POST", "/api/auth/sign-in", { email, password })),
-    );
-  } finally {
-    await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${id}`, {
-      method: "DELETE",
-      headers: admin,
-    });
-  }
+  return cookiesOf(res);
 }
 
 interface Me {
@@ -69,8 +15,7 @@ interface Me {
 
 describe("PATCH /api/me", () => {
   it("saves language and theme and returns them from GET /api/me", async () => {
-    await withNewUser(async (signInNew) => {
-      const cookie = await signInNew();
+    await withNewUser(async ({ cookie }) => {
       const res = await request("PATCH", "/api/me", { locale: "de", theme: "dark" }, cookie);
       expect(res.status).toBe(200);
       expect(await res.json<Me>()).toMatchObject({ locale: "de", theme: "dark" });
@@ -107,14 +52,16 @@ describe("PATCH /api/me", () => {
 
 describe("first request of a new user", () => {
   it("parallel first requests create one app_user without errors", async () => {
-    await withNewUser(async (signInNew) => {
-      const cookie = await signInNew();
-      const results = await Promise.all(
-        Array.from({ length: 5 }, () => request("GET", "/api/me", undefined, cookie)),
-      );
-      expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200]);
-      const handles = await Promise.all(results.map((r) => r.json<Me>().then((m) => m.handle)));
-      expect(new Set(handles).size).toBe(1);
-    });
+    await withNewUser(
+      async ({ cookie }) => {
+        const results = await Promise.all(
+          Array.from({ length: 5 }, () => request("GET", "/api/me", undefined, cookie)),
+        );
+        expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200]);
+        const handles = await Promise.all(results.map((r) => r.json<Me>().then((m) => m.handle)));
+        expect(new Set(handles).size).toBe(1);
+      },
+      { loadHandle: false },
+    );
   });
 });
