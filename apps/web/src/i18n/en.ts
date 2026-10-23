@@ -119,6 +119,13 @@ export const en = {
   "history.delete": "Delete version",
   "history.deleteN": "Delete v{n}",
   "history.confirmDelete": "Delete v{n} for good? This cannot be undone.",
+  "diff.short": "Diff",
+  "diff.button": "Changes in v{n}",
+  "diff.linesChanged": "{count} lines changed",
+  "diff.sameText": "The text is the same.",
+  "diff.varAdded": "New variable {name}",
+  "diff.varRemoved": "Removed variable {name}",
+  "diff.varDefault": "{name}: default {from} → {to}",
 } as const;
 
 export type MessageKey = keyof typeof en;

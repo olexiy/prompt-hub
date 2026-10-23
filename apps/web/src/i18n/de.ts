@@ -119,4 +119,11 @@ export const de: Messages = {
   "history.delete": "Version löschen",
   "history.deleteN": "v{n} löschen",
   "history.confirmDelete": "v{n} endgültig löschen? Das lässt sich nicht rückgängig machen.",
+  "diff.short": "Änderungen",
+  "diff.button": "Änderungen in v{n}",
+  "diff.linesChanged": "{count} Zeilen geändert",
+  "diff.sameText": "Der Text ist gleich.",
+  "diff.varAdded": "Neue Variable {name}",
+  "diff.varRemoved": "Variable {name} entfernt",
+  "diff.varDefault": "{name}: Standard {from} → {to}",
 };

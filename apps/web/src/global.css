@@ -294,6 +294,53 @@ body {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+/* Diff (mockup: history) */
+.ph-diff-scroll {
+  overflow-x: auto;
+}
+.ph-diff {
+  width: 100%;
+  border-collapse: collapse;
+  font: 12px/1.6 var(--fontStack-monospace);
+}
+.ph-diff td {
+  padding: 0 8px;
+  vertical-align: top;
+}
+.ph-diff-n {
+  width: 1%;
+  text-align: right;
+  color: var(--fgColor-muted);
+  user-select: none;
+}
+.ph-diff-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ph-diff-del {
+  background: var(--diffBlob-deletionLine-bgColor, var(--bgColor-danger-muted));
+}
+.ph-diff-add {
+  background: var(--diffBlob-additionLine-bgColor, var(--bgColor-success-muted));
+}
+.ph-diff del {
+  background: var(--diffBlob-deletionWord-bgColor, var(--bgColor-danger-muted));
+  text-decoration: none;
+}
+.ph-diff ins {
+  background: var(--diffBlob-additionWord-bgColor, var(--bgColor-success-muted));
+  text-decoration: none;
+}
+.ph-diff-hunk td {
+  color: var(--fgColor-muted);
+  background: var(--bgColor-accent-muted);
+}
+.ph-diff-vars {
+  margin: 0;
+  padding: 8px 16px 8px 32px;
+  border-top: 1px solid var(--borderColor-muted);
+}
+
 /* Project page */
 .ph-proj {
   display: grid;
