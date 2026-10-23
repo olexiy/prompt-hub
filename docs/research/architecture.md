@@ -142,4 +142,4 @@ Simple and functional, for IT people, GitHub-like: **Primer React** components, 
 **Accounts Olexiy creates himself:** Cloudflare (card needed for R2 only, at v1), Supabase; Resend later. No Google Cloud.
 
 ## Decision
-*Pending Olexiy's approval of revision 2.* On approval: ADRs in `docs/decisions.md` and an Architecture section in `PROJECT_PLAN.md`.
+**2026-10-23: revision 2 accepted** — ADRs in [decisions.md](../decisions.md), summary in [PROJECT_PLAN.md](../PROJECT_PLAN.md). Olexiy also allowed making the repo public; then CodeQL and push protection are switched on for free (§6).

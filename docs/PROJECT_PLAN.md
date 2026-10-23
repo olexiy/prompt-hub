@@ -5,7 +5,7 @@
 Related: [brief.md](brief.md) · [DEV_PROCESS.md](DEV_PROCESS.md) · [decisions.md](decisions.md) · [findings-log.md](findings-log.md)
 
 ## Open questions
-1. **Hosting budget** — monthly ceiling for hosting + DB + auth. Not answered at bootstrap; ask in the architecture task. Recommendation to discuss: free tiers where they are not a trap, a hard ceiling around €10–25/month.
+1. ~~**Hosting budget**~~ — **€0/month** for now; a sleeping DB is acceptable (2026-10-23).
 2. ~~**Build, fork or adopt**~~ — **build** (2026-10-23, see [research/market-scan.md](research/market-scan.md)).
 3. **Name** — "PromptHub" is taken (prompthub.us, same niche); rename before anything public. Candidates: Promptyard, Promptloft, Prompt Atelier (domains and trademarks not checked yet).
 
@@ -36,7 +36,29 @@ Full list and reasoning: [FEATURES.md](FEATURES.md). Product shape: project → 
 | v4 | AI studio | AI screenwriter, variants, prompt from image, custom system prompts, semantic search, payments |
 
 ## 2. Architecture
-To be decided in Phase 0 (architecture task): stack, hosting, DB, auth provider, security standard (e.g. OWASP ASVS level), cost. Recorded here plus ADRs in `decisions.md`.
+Decided 2026-10-23 (#4). Details and alternatives: [research/architecture.md](research/architecture.md); ADRs in [decisions.md](decisions.md).
+
+```mermaid
+flowchart LR
+  U[Browser<br/>React + Primer React] -->|HTTPS, same origin| W[Cloudflare Worker<br/>static assets + Hono API]
+  W -->|HttpOnly cookies, JWKS| SA[Supabase Auth]
+  W -->|SQL via Hyperdrive, Drizzle| DB[(Supabase Postgres<br/>EU)]
+  W -.->|v1: files, backups| R2[(Cloudflare R2)]
+  GH[GitHub Actions] -->|wrangler deploy, migrations| W
+```
+
+| Area | Decision |
+|---|---|
+| Language | TypeScript end to end |
+| Frontend | React 19 + Primer React (GitHub's design system), Vite, i18n en/ru/de |
+| Backend | Hono on Cloudflare Workers, modular monolith, one deployable serving UI and `/api` |
+| Data | Supabase Postgres (EU), Drizzle ORM + SQL migrations, via Cloudflare Hyperdrive |
+| Auth | Supabase Auth, invites only, session in HttpOnly cookies, JWT verified via JWKS |
+| Files | Cloudflare R2 (from v1) |
+| Repo | pnpm monorepo: `apps/web`, `apps/api`, `packages/core`, `packages/db`, `e2e` |
+| CI/CD | GitHub Actions: PR checks (lint, types, tests, e2e, security scans), preview deploys to staging, production by manual dispatch after Olexiy's go |
+| Security | OWASP ASVS 5.0 Level 2; supply-chain hardening (release-age gate, no install scripts, SHA-pinned actions); daily vulnerability scans |
+| Cost | €0/month (Cloudflare Free, Supabase Free ×2: prod + staging) |
 
 ## 3. Phases
 
@@ -48,7 +70,7 @@ Each phase = a GitHub milestone + epic issue (`phase-N`). Tasks are created when
 **Exit criteria:**
 - [x] Market scan done; Olexiy decided build / fork / adopt. → **build**
 - [x] Feature catalogue with priorities; v1 scope agreed with Olexiy. → [FEATURES.md](FEATURES.md)
-- [ ] Architecture, stack, hosting and security standard decided and recorded as ADRs.
+- [x] Architecture, stack, hosting and security standard decided and recorded as ADRs.
 - [ ] Development phases exist as milestones + epics; Phase 1 split into tasks.
 
 ### Phase 1 onwards
@@ -65,4 +87,4 @@ Defined by the roadmap task. Phase 1 starts with the project skeleton, CI (see `
 ## 5. Status
 | Phase | State |
 |---|---|
-| 0 — Discovery | in progress — market scan done (build), features and versions agreed |
+| 0 — Discovery | in progress — build decided, features and versions agreed, architecture decided; roadmap next |
