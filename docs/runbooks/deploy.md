@@ -18,7 +18,7 @@ Project refs and Hyperdrive ids are public identifiers and live in the repo. Sup
 | `CLOUDFLARE_API_TOKEN`              | GitHub environment secret, `staging` and `production`                                                         |
 | Supabase secret keys / service role | Not used by the Worker; only in the Supabase dashboard                                                        |
 
-Workers subdomain: `ol-sakura.workers.dev` — staging is **https://prompt-hub-staging.ol-sakura.workers.dev** (deployed 2026-10-23, Data API off, sign-up off, site URL set). Production is not deployed yet.
+Workers subdomain: `ol-sakura.workers.dev` — staging is **https://prompt-hub-staging.ol-sakura.workers.dev** (deployed 2026-10-23, Data API off, sign-up off, site URL set). Production is **https://prompt-hub.ol-sakura.workers.dev** (first deploy 2026-10-23, Data API off, sign-up off, site URL and `/auth/callback` redirect set).
 
 GitHub variables: `CLOUDFLARE_ACCOUNT_ID` at repository level (the preview job's `if` can only read repository variables); per environment `SUPABASE_PUBLISHABLE_KEY` (`supabase projects api-keys --project-ref <ref>`) and `APP_URL` (`https://prompt-hub-staging.<subdomain>.workers.dev`, `https://prompt-hub.<subdomain>.workers.dev`).
 
