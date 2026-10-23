@@ -11,6 +11,7 @@ const channel = process.env.E2E_CHANNEL ?? (process.platform === "win32" ? "msed
 
 export default defineConfig({
   testDir: "./tests",
+  globalSetup: "./global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

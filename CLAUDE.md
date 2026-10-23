@@ -45,6 +45,8 @@ pnpm is not installed globally: call it as `corepack pnpm …` (Node 24 ships co
 | `corepack pnpm test`                                           | Vitest: core unit tests, API tests in the Workers runtime                                            |
 | `corepack pnpm e2e`                                            | Playwright on :8788 with the installed Edge/Chrome (run `build` first); see `docs/testing.md`        |
 
+Before `test`/`e2e`: `corepack pnpm db:start` (local Supabase in Docker) and `db:migrate`; `apps/api/.dev.vars` holds the local Supabase URL and keys (see `docs/testing.md`).
+
 Gotchas: TypeScript stays on 6.0.x until typescript-eslint supports 7; Primer's `ThemeProvider` comes from `@primer/react/next`.
 
 ## Environment

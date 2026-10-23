@@ -37,3 +37,4 @@ Thumbs.db
 .dev.vars
 .dev.vars.*
 *.tsbuildinfo
+e2e/.auth/
