@@ -2,12 +2,12 @@
 
 Pick the cheapest layer that proves the behaviour (DEV_PROCESS §5). Backend logic is written test-first.
 
-| Layer           | Where                         | Runner                                 | Runs against                                                                         |
-| --------------- | ----------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
-| Unit            | `packages/core/src/*.test.ts` | Vitest 5                               | plain functions                                                                      |
-| API integration | `apps/api/test/*.test.ts`     | Vitest 5 + `@cloudflare/vitest-plugin` | the real Worker in the Workers runtime (Miniflare), real `wrangler.jsonc`            |
-| Database        | added in #20                  | Vitest                                 | a throwaway Postgres                                                                 |
-| End-to-end      | `e2e/tests/*.spec.ts`         | Playwright 1.64                        | local Worker on port **8788** serving the built web app, desktop and phone viewports |
+| Layer           | Where                         | Runner                                 | Runs against                                                                                                                     |
+| --------------- | ----------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Unit            | `packages/core/src/*.test.ts` | Vitest 5                               | plain functions                                                                                                                  |
+| API integration | `apps/api/test/*.test.ts`     | Vitest 5 + `@cloudflare/vitest-plugin` | the real Worker in the Workers runtime (Miniflare), real `wrangler.jsonc`                                                        |
+| Database        | `packages/db/test/*.test.ts`  | Vitest 5                               | a throwaway database per file on local Supabase Postgres (`TEST_DATABASE_URL`) or the CI Postgres 17 service; skipped when unset |
+| End-to-end      | `e2e/tests/*.spec.ts`         | Playwright 1.64                        | local Worker on port **8788** serving the built web app, desktop and phone viewports                                             |
 
 ## Commands
 

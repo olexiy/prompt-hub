@@ -55,7 +55,7 @@ Checked 2026-10-23: Windows 11, RTX 5070 Ti 16 GB, JDK 21, Node 24, Python 3.13 
 
 - **Mode:** Claude leads — Claude drives implementation through the task cycle.
 - **Ask first:** creating accounts or paid plans on any hosting/DB/auth provider (Olexiy signs up himself), any recurring cost, deploys (check identity + target), opening sites he did not name, downloads.
-- **Pre-approved (2026-10-23, Phase 1):** pnpm via corepack and installing the project's npm packages inside the repo, with the pnpm release-age gate on. Global installs and other downloads still need a go.
+- **Pre-approved (2026-10-23, Phase 1):** pnpm via corepack and installing the project's npm packages inside the repo, with the pnpm release-age gate on; local Supabase in Docker (`supabase start`, image pulls) and starting Docker Desktop for it. Global installs and other downloads still need a go.
 - **Security is a requirement, not a later phase:** auth, authorization per project/prompt, input validation, secrets only in env/secret stores, never in git or issues.
 - Multi-user from the start: every data model and API decision assumes many users and tenants, even while Olexiy is the only user.
 
