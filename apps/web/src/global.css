@@ -12,6 +12,13 @@ body {
   background-color: var(--bgColor-default);
 }
 
+/* User text (titles, descriptions, slugs) may contain long words without spaces: break them
+   instead of widening the page (#45). */
+.ph-page {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
 .ph-center {
   display: grid;
   place-items: center;
@@ -353,6 +360,14 @@ body {
   }
   .ph-side {
     order: 2;
+  }
+}
+/* iOS Safari zooms into any focused field under 16px and the page then pans sideways (#45). */
+@media (max-width: 860px) {
+  .ph-root input,
+  .ph-root textarea,
+  .ph-root select {
+    font-size: 16px;
   }
 }
 @media (max-width: 520px) {

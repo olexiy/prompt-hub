@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { expectFitsScreen } from "./layout";
 import { createUser, ownClientIp, type TestUser } from "./users";
 
 let user: TestUser;
@@ -39,6 +40,7 @@ test("language and theme switch, persist across reloads and sessions", async ({ 
   await page.getByRole("button", { name: "Account" }).click();
   await page.getByRole("menuitem", { name: "Settings" }).click();
   await expect(page).toHaveURL(/\/settings$/);
+  await expectFitsScreen(page);
 
   await page.getByLabel("Language").selectOption("ru");
   await page.getByLabel("Dark").check();

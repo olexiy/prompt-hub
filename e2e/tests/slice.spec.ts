@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectFitsScreen } from "./layout";
 import { createUser, ownClientIp, type TestUser } from "./users";
 
 let user: TestUser;
@@ -25,15 +26,23 @@ test("create project → create prompt → fill variables → copy the rendered 
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "No projects yet" })).toBeVisible();
+  await expectFitsScreen(page);
 
   // Project: the slug is suggested from the name.
   await page.getByRole("button", { name: "New project" }).click();
   await page.getByLabel(/^Name/).fill("Comfy H3");
   await expect(page.getByLabel("URL slug")).toHaveValue("comfy-h3");
-  await page.getByLabel("Description (optional)").fill("Video prompts");
+  // A long word without spaces must wrap, not widen the page (#45).
+  await page
+    .getByLabel("Description (optional)")
+    .fill(
+      "Video prompts: MiniMax-H3-shot-lists-with-appearance-and-background-locks-for-9-second-clips",
+    );
+  await expectFitsScreen(page);
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page).toHaveURL(/\/comfy-h3$/);
   await expect(page.getByText("No prompts yet. Create the first one.")).toBeVisible();
+  await expectFitsScreen(page);
 
   // Prompt with Cyrillic and German variable names.
   await page.getByRole("button", { name: "New prompt" }).click();
@@ -44,6 +53,7 @@ test("create project → create prompt → fill variables → copy the rendered 
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page).toHaveURL(/\/comfy-h3\/bus-stop-9s$/);
   await expect(page.getByRole("heading", { name: "Bus stop 9s" })).toBeVisible();
+  await expectFitsScreen(page);
 
   // Unfilled variables are flagged, and the copy keeps their placeholders.
   await expect(page.getByRole("note")).toContainText("subject, время, Größe");
@@ -66,5 +76,6 @@ test("create project → create prompt → fill variables → copy the rendered 
   await page.getByRole("link", { name: "Prompt Hub home" }).click();
   await expect(page.getByRole("link", { name: "Comfy H3" })).toBeVisible();
   await expect(page.getByText("Prompts: 1")).toBeVisible();
+  await expectFitsScreen(page);
   expect(errors).toEqual([]);
 });
