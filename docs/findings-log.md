@@ -3,6 +3,7 @@
 Observations that are not decisions: measurements, surprises, things that did not work. Newest first, dated.
 
 ## 2026-10-23 — CI and push protection checked (#18)
+
 - First CI run green in about 1 minute wall time; CodeQL default setup picked up `javascript-typescript` on the first TypeScript PR.
 - Push protection test: a commit with a fake `sk_live_…` key on a throwaway branch was rejected (`GH013 … Push cannot contain secrets`); the branch never reached GitHub.
 
