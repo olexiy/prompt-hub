@@ -1,6 +1,8 @@
 import "@primer/primitives/dist/css/primitives.css";
 import "@primer/primitives/dist/css/functional/themes/light.css";
 import "@primer/primitives/dist/css/functional/themes/dark.css";
+// Global page CSS lives in a file: the CSP allows no inline <style> in index.html.
+import "./global.css";
 import { BaseStyles } from "@primer/react";
 import { ThemeProvider } from "@primer/react/next";
 import { StrictMode } from "react";

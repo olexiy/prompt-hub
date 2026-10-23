@@ -6,6 +6,8 @@ import { clearSession, readSession, setSession } from "./cookies";
 import { createDb } from "@prompt-hub/db";
 import { verifyAccessToken } from "./jwt";
 import { ensureAppUser } from "./users";
+import { rateLimit } from "../security/rate-limit";
+import { parseJson } from "../security/validate";
 import {
   AuthError,
   refreshSession,
@@ -46,11 +48,10 @@ export const authRoutes = new Hono<AppEnv>()
     );
     return c.json({ user: { id, handle, displayName, locale, theme } });
   })
-  .post("/sign-in", async (c) => {
-    const body = credentials.safeParse(await c.req.json().catch(() => null));
-    if (!body.success) return c.json({ error: "Enter an email and a password" }, 400);
+  .post("/sign-in", rateLimit("AUTH_LIMITER"), async (c) => {
+    const body = await parseJson(c, credentials, "Enter an email and a password");
     try {
-      setSession(c, await signInWithPassword(c.env, body.data.email, body.data.password));
+      setSession(c, await signInWithPassword(c.env, body.email, body.password));
       return c.json({ ok: true });
     } catch (e) {
       if (e instanceof AuthError && e.status === 401) {
@@ -76,31 +77,28 @@ export const authRoutes = new Hono<AppEnv>()
       return c.json({ error: "Unauthorized" }, 401);
     }
   })
-  .post("/reset", async (c) => {
-    const body = resetRequest.safeParse(await c.req.json().catch(() => null));
-    if (!body.success) return c.json({ error: "Enter a valid email" }, 400);
+  .post("/reset", rateLimit("AUTH_LIMITER"), async (c) => {
+    const body = await parseJson(c, resetRequest, "Enter a valid email");
     const redirectTo = `${new URL(c.req.url).origin}/auth/callback`;
-    await requestPasswordReset(c.env, body.data.email, redirectTo);
+    await requestPasswordReset(c.env, body.email, redirectTo);
     // Same answer for known and unknown addresses (no account enumeration).
     return c.json({ ok: true });
   })
-  .post("/session", async (c) => {
+  .post("/session", rateLimit("AUTH_LIMITER"), async (c) => {
     // The reset link lands on /auth/callback with tokens in the URL fragment; the page hands
     // them over once so they end up in HttpOnly cookies and can be dropped from the page.
-    const body = recoverySession.safeParse(await c.req.json().catch(() => null));
-    if (!body.success) return c.json({ error: "Invalid link" }, 400);
-    const claims = await verifyAccessToken(body.data.accessToken, c.env.SUPABASE_URL);
+    const body = await parseJson(c, recoverySession, "Invalid link");
+    const claims = await verifyAccessToken(body.accessToken, c.env.SUPABASE_URL);
     if (!claims) return c.json({ error: "The link is invalid or has expired" }, 401);
-    setSession(c, body.data);
+    setSession(c, body);
     return c.json({ ok: true });
   })
-  .post("/password", async (c) => {
-    const body = newPassword.safeParse(await c.req.json().catch(() => null));
-    if (!body.success) return c.json({ error: "Use at least 12 characters" }, 400);
+  .post("/password", rateLimit("AUTH_LIMITER"), async (c) => {
+    const body = await parseJson(c, newPassword, "Use at least 12 characters");
     const { access } = readSession(c);
     if (!(await verifyAccessToken(access, c.env.SUPABASE_URL)) || !access) {
       return c.json({ error: "Unauthorized" }, 401);
     }
-    await updatePassword(c.env, access, body.data.password);
+    await updatePassword(c.env, access, body.password);
     return c.json({ ok: true });
   });

@@ -3,6 +3,10 @@ import { Hono } from "hono";
 import type { AppEnv } from "./app-env";
 import { requireUser, sameOrigin } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
+import { handleError, handleNotFound } from "./security/errors";
+import { securityHeaders } from "./security/headers";
+import { limitWrites } from "./security/rate-limit";
+import { limitBody } from "./security/validate";
 
 /**
  * The single Worker: REST API under /api, static web app for everything else
@@ -11,7 +15,11 @@ import { authRoutes } from "./auth/routes";
  */
 const app = new Hono<AppEnv>().basePath("/api");
 
+// Order matters: headers wrap everything (also errors), cheap rejections run before any work.
+app.use("*", securityHeaders);
 app.use("*", sameOrigin);
+app.use("*", limitBody);
+app.use("*", limitWrites);
 
 app.get("/health", (c) => c.json({ status: "ok", app: APP_NAME } satisfies HealthResponse));
 
@@ -22,11 +30,7 @@ app.get("/me", requireUser, (c) => {
   return c.json({ id, handle, displayName, locale, theme });
 });
 
-app.notFound((c) => c.json({ error: "Not found" }, 404));
-
-app.onError((err, c) => {
-  console.error(err);
-  return c.json({ error: "Something went wrong" }, 500);
-});
+app.notFound(handleNotFound);
+app.onError(handleError);
 
 export default app;

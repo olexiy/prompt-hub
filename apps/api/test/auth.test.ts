@@ -7,7 +7,13 @@ const ORIGIN = "http://localhost";
 function post(path: string, body: unknown, headers: Record<string, string> = {}) {
   return exports.default.fetch(`${ORIGIN}${path}`, {
     method: "POST",
-    headers: { origin: ORIGIN, "content-type": "application/json", ...headers },
+    headers: {
+      origin: ORIGIN,
+      "content-type": "application/json",
+      // A fresh client IP per call keeps these tests clear of the auth rate limit.
+      "cf-connecting-ip": `198.51.100.${String(Math.floor(Math.random() * 250))}`,
+      ...headers,
+    },
     body: JSON.stringify(body),
   });
 }

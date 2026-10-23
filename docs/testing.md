@@ -34,6 +34,7 @@ Playwright uses an installed browser instead of downloading its own: **Microsoft
 - API tests call the Worker through `exports.default.fetch(...)` from `cloudflare:workers`; types come from the generated `apps/api/worker-configuration.d.ts` (`corepack pnpm --filter @prompt-hub/api types` after changing `wrangler.jsonc`).
 - Every new endpoint gets an authorisation test proving another user gets 404 (from #22 on).
 - e2e specs fail on any console error; keep that check in new specs.
+- Requests without `cf-connecting-ip` share one rate-limit key; API tests that send many writes give each request its own fake IP (see `apps/api/test/security.test.ts`).
 - No mocks of our own internals; mock only at the boundary (external HTTP).
 
 ## Local Supabase is part of the test setup (#22)
