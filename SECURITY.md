@@ -13,5 +13,5 @@ The project is in early development; only the latest `main` and the current prod
 ## What we do
 
 - Target standard: OWASP ASVS 5.0 Level 2 — see [docs/research/architecture.md](docs/research/architecture.md) §6–7.
-- Automated: CodeQL, secret scanning with push protection, Dependabot alerts and security updates, gitleaks, OSV-Scanner and Semgrep in CI, daily scheduled scans.
+- Automated: CodeQL, secret scanning with push protection, Dependabot alerts and security updates, gitleaks and OSV-Scanner in CI, daily scheduled scans.
 - Supply chain: npm packages only after a release-age delay, install scripts blocked by default, GitHub Actions pinned to commit SHAs.

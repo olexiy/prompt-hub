@@ -89,7 +89,7 @@ docs/              plan, decisions, research, runbooks
 3. unit + integration tests (Vitest; API tests in the Workers runtime via `@cloudflare/vitest-pool-workers`, DB tests against a Postgres service container)
 4. build
 5. e2e (Playwright against local Worker + Postgres), report uploaded only on failure
-6. security: gitleaks (secrets), `pnpm audit --prod`, OSV-Scanner on the lockfile, Semgrep CE (SAST)
+6. security: gitleaks (secrets), `pnpm audit --prod`, OSV-Scanner on the lockfile; SAST by CodeQL default setup (the repo is public)
 
 **CD (`deploy.yml`)**
 
@@ -104,7 +104,7 @@ docs/              plan, decisions, research, runbooks
 - **Dependabot**: alerts and security updates (free for private repos) immediately; version updates weekly, grouped, with a cooldown. "Latest versions" means latest _stable after the cooldown_.
 - GitHub Actions: pinned to commit SHAs, `permissions: read-all` by default, **never `pull_request_target`**, secrets only in the deploy job, Cloudflare API token scoped to this Worker only.
 - Few dependencies by policy: every new runtime dependency is named in the PR and justified.
-- Paid GitHub features we skip on a private repo (CodeQL code scanning, push protection) are replaced by Semgrep CE and gitleaks (pre-commit + CI). If the repo goes public, CodeQL and push protection become free and are switched on.
+- The repo is public, so CodeQL code scanning and secret scanning with push protection are free and on; gitleaks in CI is the second line. (The private-repo plan used Semgrep CE instead of CodeQL; dropped in #18 as redundant.)
 
 **Zero-day monitoring:** Dependabot alerts + daily OSV scan for our code; Cloudflare patches the Workers runtime, Supabase patches Postgres and Auth (no OS or container of ours to patch); Cloudflare free managed WAF rules in front; `/security-review` before every production deploy that touches auth, authorisation or input handling.
 
