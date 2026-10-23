@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ApiError, del, get, post } from "../api";
 import { useI18n } from "../i18n";
 import { useApi } from "../useApi";
+import { DiffView } from "./DiffView";
 
 /**
  * Version history of a prompt (mockup: history): newest first, the live one marked; view an old
@@ -21,6 +22,7 @@ export function History({
   const confirm = useConfirm();
   const [loaded, reload] = useApi<{ versions: VersionSummary[] }>(apiVersions);
   const [open, setOpen] = useState<VersionDetail | null>(null);
+  const [diff, setDiff] = useState<{ from: VersionDetail; to: VersionDetail } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
@@ -29,6 +31,7 @@ export function History({
     try {
       await run();
       setOpen(null);
+      setDiff(null);
       reload();
       onChanged();
     } catch (err) {
@@ -45,6 +48,21 @@ export function History({
       confirmButtonType: "danger",
     });
     if (ok) await act(() => del(`${apiVersions}?n=${String(n)}`));
+  }
+
+  /** The next older version's number, if any. */
+  const older = (n: number) =>
+    loaded.state === "ok" ? loaded.data.versions.find((x) => x.number < n)?.number : undefined;
+
+  async function showDiff(n: number) {
+    const prev = older(n);
+    if (prev === undefined) return;
+    const [from, to] = await Promise.all([
+      get<VersionDetail>(`${apiVersions}?n=${String(prev)}`),
+      get<VersionDetail>(`${apiVersions}?n=${String(n)}`),
+    ]);
+    setOpen(null);
+    setDiff({ from, to });
   }
 
   if (loaded.state === "loading") {
@@ -72,9 +90,19 @@ export function History({
             </div>
             <span>{v.current && <Label variant="success">{t("prompt.live")}</Label>}</span>
             <span className="ph-row">
+              {older(v.number) !== undefined && (
+                <Button
+                  size="small"
+                  aria-label={t("diff.button", { n: String(v.number) })}
+                  onClick={() => void showDiff(v.number)}
+                >
+                  {t("diff.short")}
+                </Button>
+              )}
               <Button
                 size="small"
                 onClick={() => {
+                  setDiff(null);
                   if (open?.number === v.number) setOpen(null);
                   else
                     void get<VersionDetail>(`${apiVersions}?n=${String(v.number)}`).then(setOpen);
@@ -104,6 +132,7 @@ export function History({
           </div>
         ))}
       </div>
+      {diff && <DiffView from={diff.from} to={diff.to} />}
       {open && (
         <div className="ph-box">
           <div className="ph-box-head">

@@ -3,6 +3,7 @@
  * `{{variable}}` renderer.
  */
 
+export * from "./diff";
 export * from "./id";
 export * from "./prefs";
 export * from "./projects";

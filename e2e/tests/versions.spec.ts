@@ -58,6 +58,14 @@ test("edit a prompt into a new version, see the history, restore the old one", a
   // History: newest first, live marked; view v1, restore it as v3.
   await page.getByRole("button", { name: /History/ }).click();
   await expect(page.getByText("German version")).toBeVisible();
+  // Diff of v2 against v1: changed words are marked, the new variable is listed.
+  await page.getByRole("button", { name: "Changes in v2" }).click();
+  const diff = page.getByTestId("diff");
+  await expect(diff).toContainText("v1 → v2");
+  await expect(diff.locator("ins")).toContainText(["zweiter Entwurf über {{тема}}."]);
+  await expect(diff).toContainText("New variable тема");
+  await expectFitsScreen(page);
+
   await page.getByRole("button", { name: "View" }).last().click();
   await expect(page.getByTestId("version-body")).toHaveText("Dear {{name}}, first draft.");
   await page.getByRole("button", { name: "Restore" }).click();

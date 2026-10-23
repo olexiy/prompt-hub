@@ -117,4 +117,11 @@ export const ru: Messages = {
   "history.delete": "Удалить версию",
   "history.deleteN": "Удалить v{n}",
   "history.confirmDelete": "Удалить v{n} навсегда? Это нельзя отменить.",
+  "diff.short": "Изменения",
+  "diff.button": "Изменения в v{n}",
+  "diff.linesChanged": "Изменено строк: {count}",
+  "diff.sameText": "Текст не изменился.",
+  "diff.varAdded": "Новая переменная {name}",
+  "diff.varRemoved": "Удалена переменная {name}",
+  "diff.varDefault": "{name}: по умолчанию {from} → {to}",
 };
