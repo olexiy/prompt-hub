@@ -32,14 +32,27 @@ describe("suggestSlug", () => {
     ["Bus stop – 9 s", "bus-stop-9-s"],
     ["  Comfy H3  ", "comfy-h3"],
     ["Größe & Übung", "grosse-ubung"],
-    ["Привет мир", ""],
+    ["Привет мир", "privet-mir"],
+    ["Щука, ёж и съезд", "shchuka-ezh-i-sezd"],
+    ["Їжак і Ґанок, Євген", "yizhak-i-ganok-yevgen"],
+    ["Йога 2 – Bus stop", "yoga-2-bus-stop"],
+    ["Ъ ь", ""],
+    ["日本語", ""],
+    ["я".repeat(40), "ya".repeat(32)],
     ["a".repeat(70) + "-tail", "a".repeat(64)],
   ])("%s → %s", (name, slug) => {
     expect(suggestSlug(name)).toBe(slug);
   });
 
   it("only produces valid slugs or an empty string", () => {
-    for (const name of ["Hello, World!", "x -- y", "2026 Plan", "ñandú"]) {
+    for (const name of [
+      "Hello, World!",
+      "x -- y",
+      "2026 Plan",
+      "ñandú",
+      "Юля — Шаблон №3",
+      "Ўсё",
+    ]) {
       const slug = suggestSlug(name);
       expect(slug === "" || isValidSlug(slug)).toBe(true);
     }
