@@ -28,6 +28,10 @@ export async function patch<T>(path: string, body: unknown): Promise<T> {
   return send<T>("PATCH", path, body);
 }
 
+export async function put<T>(path: string, body: unknown): Promise<T> {
+  return send<T>("PUT", path, body);
+}
+
 export async function del(path: string): Promise<void> {
   const res = await fetch(path, {
     method: "DELETE",

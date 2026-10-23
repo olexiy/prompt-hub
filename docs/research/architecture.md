@@ -132,7 +132,7 @@ docs/              plan, decisions, research, runbooks
 - `project` (id, owner_id, `slug` unique per owner, name, description, visibility PRIVATE/PUBLIC, archived_at, timestamps)
 - `folder` (id, project_id, parent_id null, slug, name)
 - `prompt` (id, project_id, folder_id null, `slug` unique per project+folder, title, type TEXT/CHAT/MEDIA, `current_version_id`, meta JSONB, timestamps)
-- `prompt_version` (id, prompt_id, `number`, body, sections JSONB null (v1), variables JSONB (name, type, default, description), message, created_at; deleting removes the row)
+- `prompt_version` (id, prompt_id, `number`, body, sections JSONB null (v1), variables JSONB (name, type, default, description), message (only the automatic "Restored vN" label; no user messages), created_at; deleting removes the row)
 - `tag`, `project_tag`, `prompt_tag` (tag per owner)
 - `invite` (code hash, created_by, email, expires_at, used_by)
 - `plan_limit` (plan, max_projects = 25, max_prompts = 250, …) — data from MVP, enforced from v3

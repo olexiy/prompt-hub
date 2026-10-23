@@ -24,7 +24,7 @@ async function seed(s: TestSession) {
 }
 
 describe("versions", () => {
-  it("save, list, read, restore and delete versions", async () => {
+  it("create, list, read, restore and delete versions", async () => {
     await withNewUser(async (s) => {
       const u = await seed(s);
       const save = (body: unknown) => request("POST", u.versions, body, s.cookie);
@@ -32,17 +32,16 @@ describe("versions", () => {
       const v2 = await save({
         body: "v2 {{a}} {{тема}}",
         variables: [{ name: "тема", default: "отпуск" }],
-        message: "Second take",
       });
       expect(v2.status).toBe(201);
       const after2 = await v2.json<PromptDetail>();
-      expect(after2.version).toMatchObject({ number: 2, message: "Second take" });
+      expect(after2.version).toMatchObject({ number: 2, message: "" });
       expect(after2.versionCount).toBe(2);
       expect(after2.version.variables).toEqual([
         { name: "a" },
         { name: "тема", default: "отпуск" },
       ]);
-      await save({ body: "v3", message: "Third" });
+      await save({ body: "v3" });
 
       const list = await (
         await request("GET", u.versions, undefined, s.cookie)
@@ -87,6 +86,46 @@ describe("versions", () => {
     });
   });
 
+  it("a plain save edits the current version in place", async () => {
+    await withNewUser(async (s) => {
+      const u = await seed(s);
+      const edit = (body: unknown) => request("PUT", u.versions, body, s.cookie);
+
+      const res = await edit({
+        body: "v1 edited {{a}} {{b}}",
+        variables: [{ name: "b", default: "B" }, { name: "gone" }],
+      });
+      expect(res.status).toBe(200);
+      const edited = await res.json<PromptDetail>();
+      expect(edited.versionCount).toBe(1);
+      expect(edited.version).toMatchObject({ number: 1, body: "v1 edited {{a}} {{b}}" });
+      // Definitions follow the text: unknown ones are dropped, new ones added.
+      expect(edited.version.variables).toEqual([{ name: "a" }, { name: "b", default: "B" }]);
+
+      // After a new version, a save edits that one and leaves the old one alone.
+      await request("POST", u.versions, { body: "v2" }, s.cookie);
+      const again = await (await edit({ body: "v2 edited" })).json<PromptDetail>();
+      expect(again.version).toMatchObject({ number: 2, body: "v2 edited" });
+      expect(again.versionCount).toBe(2);
+      const v1 = await (
+        await request("GET", `${u.versions}?n=1`, undefined, s.cookie)
+      ).json<VersionDetail>();
+      expect(v1.body).toBe("v1 edited {{a}} {{b}}");
+
+      for (const body of [
+        {},
+        { body: "x".repeat(100_001) },
+        { body: "x", message: "m" },
+        { restore: 1 },
+      ]) {
+        expect((await edit(body)).status).toBe(400);
+      }
+      expect((await request("PUT", `${u.base}/versions/f`, { body: "x" }, s.cookie)).status).toBe(
+        404,
+      );
+    });
+  });
+
   it("rename a prompt's title and slug", async () => {
     await withNewUser(async (s) => {
       const u = await seed(s);
@@ -114,7 +153,8 @@ describe("versions", () => {
       for (const body of [
         {},
         { body: "x".repeat(100_001) },
-        { body: "x", message: "m".repeat(501) },
+        // User messages are gone (only restores get an automatic label).
+        { body: "x", message: "m" },
         { restore: 0 },
         { body: "x", restore: 1 },
       ]) {
@@ -134,6 +174,7 @@ describe("versions", () => {
           ["GET", `${u.versions}?n=1`, undefined],
           ["POST", u.versions, { body: "hijack" }],
           ["POST", u.versions, { restore: 1 }],
+          ["PUT", u.versions, { body: "hijack" }],
           ["DELETE", `${u.versions}?n=1`, undefined],
           ["PATCH", u.item, { title: "hijack" }],
         ] as const) {
@@ -146,6 +187,7 @@ describe("versions", () => {
         await request("GET", u.item, undefined, owner.cookie)
       ).json<PromptDetail>();
       expect(live).toMatchObject({ title: "Shot", versionCount: 1 });
+      expect(live.version.body).toBe("v1 {{a}}");
     });
   });
 });

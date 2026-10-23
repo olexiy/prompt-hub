@@ -84,8 +84,8 @@ export function History({
         {loaded.data.versions.map((v) => (
           <div className="ph-box-row ph-commit" key={v.number}>
             <div className="ph-main-col">
-              <b>v{v.number}</b> ·{" "}
-              {v.message || <span className="ph-muted">{t("history.noMessage")}</span>}
+              <b>v{v.number}</b>
+              {v.message && <> · {v.message}</>}
               <div className="ph-muted ph-small">{when.format(new Date(v.createdAt))}</div>
             </div>
             <span>{v.current && <Label variant="success">{t("prompt.live")}</Label>}</span>

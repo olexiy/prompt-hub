@@ -16,6 +16,7 @@ import {
   projectCreateSchema,
   promptCreateSchema,
   syncDefinitions,
+  versionContentSchema,
   versionCreateSchema,
   type FolderListing,
   type ProjectSummary,
@@ -517,10 +518,11 @@ export const projectRoutes = new Hono<AppEnv>()
         message: `Restored v${String(old.number)}`,
       };
     } else {
+      // Versions carry no user message; only restores get an automatic label.
       content = {
         body: input.body,
         variables: cleanDefs(syncDefinitions(input.body, input.variables)),
-        message: input.message,
+        message: "",
       };
     }
     try {
@@ -559,6 +561,30 @@ export const projectRoutes = new Hono<AppEnv>()
     const row = await promptAt(db, found.proj.id, found.item.parentId, found.item.row.slug);
     if (!row) throw new Error("prompt missing after save");
     return c.json(toPromptDetail(row, found.item.parentPath), 201);
+  })
+  .put("/:handle/:project/versions/*", async (c) => {
+    // A plain save: the current version is edited in place, its number and the count stay.
+    const found = await versionedPrompt(c);
+    if (!found) return notFound(c);
+    const input = await parseJson(c, versionContentSchema, "Check the prompt text and variables");
+    const db = c.get("db");
+    await db.transaction(async (tx) => {
+      await tx
+        .update(promptVersion)
+        .set({
+          body: input.body,
+          variables: cleanDefs(syncDefinitions(input.body, input.variables)),
+        })
+        .where(eq(promptVersion.id, found.item.row.versionId));
+      await tx
+        .update(prompt)
+        .set({ updatedAt: new Date() })
+        .where(eq(prompt.id, found.item.row.id));
+      await touchProject(tx, found.proj.id);
+    });
+    const row = await promptAt(db, found.proj.id, found.item.parentId, found.item.row.slug);
+    if (!row) throw new Error("prompt missing after save");
+    return c.json(toPromptDetail(row, found.item.parentPath));
   })
   .delete("/:handle/:project/versions/*", async (c) => {
     // Deletes one version for good (feature 73); the last remaining version cannot go.
