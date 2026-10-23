@@ -67,13 +67,19 @@ export interface PromptSummary {
   updatedAt: string;
 }
 
-/** A new version: the full new state of the prompt, or `restore` an old version as the newest. */
+/** The full state of a prompt version: text and variable definitions. */
+export const versionContentSchema = z.strictObject({
+  body: z.string().max(MAX_PROMPT_BODY),
+  variables: variableDefsSchema.default([]),
+});
+export type VersionContent = z.input<typeof versionContentSchema>;
+
+/**
+ * A new version, created only when the user asks for one ("Save as new version"): the edited
+ * state, or `restore` an old version as the newest. A plain save edits the current version.
+ */
 export const versionCreateSchema = z.union([
-  z.strictObject({
-    body: z.string().max(MAX_PROMPT_BODY),
-    variables: variableDefsSchema.default([]),
-    message: z.string().trim().max(500).default(""),
-  }),
+  versionContentSchema,
   z.strictObject({ restore: z.number().int().positive() }),
 ]);
 export type VersionCreate = z.input<typeof versionCreateSchema>;
