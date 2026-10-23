@@ -5,7 +5,15 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/.wrangler/**", "**/node_modules/**", "docs/mockups/**"],
+    ignores: [
+      "**/dist/**",
+      "**/.wrangler/**",
+      "**/node_modules/**",
+      "docs/mockups/**",
+      "apps/api/worker-configuration.d.ts",
+      "e2e/playwright-report/**",
+      "e2e/test-results/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
