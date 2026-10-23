@@ -19,7 +19,7 @@ A web app for storing, versioning and reusing AI prompts: projects contain promp
 When Olexiy says «работай над проектом» / "work on the project", this is the procedure.
 
 ## Current phase: 1 — Foundation (epic #10)
-Phase 0 is done: build decided, features and versions in `docs/FEATURES.md`, architecture in `docs/research/architecture.md`, phases 1–6 as milestones and epics. Phase 1 order: #16 mockups → #17 skeleton → #18 CI → #19 test harness → #20 DB schema → #21 environments (needs Olexiy's Cloudflare + Supabase accounts) → #22 invite sign-in → #23 security baseline → #24 app shell → #25 vertical slice.
+Phase 0 is done: build decided, features and versions in `docs/FEATURES.md`, architecture in `docs/research/architecture.md`, phases 1–6 as milestones and epics. Phase 1 order: #16 mockups → #17 skeleton → #18 CI → #19 test harness → #20 DB schema → #21 environments (needs Olexiy's Cloudflare + Supabase accounts) → #22 single-user sign-in (invites in Phase 2) → #23 security baseline → #24 app shell → #25 vertical slice.
 - **The repo is public:** never commit secrets, personal data or run data; push protection and gitleaks are a safety net, not the plan.
 - **Feature talk with Olexiy:** he dictates by voice; collect ideas as a numbered list first, prioritise afterwards. Feature IDs in `docs/FEATURES.md` are stable references.
 

@@ -18,7 +18,7 @@ Full numbered catalogue and version plan: [docs/FEATURES.md](docs/FEATURES.md).
 | Phase | Milestone | Goal |
 |---|---|---|
 | 0 | [Discovery](https://github.com/olexiy/prompt-hub/milestone/1) | market scan, features, architecture, roadmap |
-| 1 | [Foundation](https://github.com/olexiy/prompt-hub/milestone/2) | monorepo, CI/CD with security scans, environments, invite sign-in, app shell, first vertical slice |
+| 1 | [Foundation](https://github.com/olexiy/prompt-hub/milestone/2) | monorepo, CI/CD with security scans, environments, single-user sign-in, app shell, first vertical slice |
 | 2 | [MVP](https://github.com/olexiy/prompt-hub/milestone/3) | my prompts online, safely: versions, variables, copy, tags, search, import/export |
 | 3 | [v1 ComfyUI workbench](https://github.com/olexiy/prompt-hub/milestone/4) | result files, Comfy Extractor, sections, templates |
 | 4 | [v2 Public and friends](https://github.com/olexiy/prompt-hub/milestone/5) | comments, stars, forks, profiles, moderation, 2FA |

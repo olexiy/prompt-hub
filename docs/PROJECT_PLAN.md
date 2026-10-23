@@ -75,8 +75,8 @@ Each phase = a GitHub milestone + epic issue (`phase-N`). Tasks are created when
 
 ### Phase 1 — Foundation · epic [#10](https://github.com/olexiy/prompt-hub/issues/10)
 **Goal:** a secure, deployable skeleton with one thin vertical slice in production.
-**Tasks (in order):** #16 mockups → #17 monorepo skeleton → #18 CI with security scans → #19 test harness → #20 DB schema v0 → #21 environments and deploys (needs Olexiy's Cloudflare + Supabase accounts) → #22 invite sign-in → #23 security baseline → #24 app shell → #25 vertical slice.
-**Exit criteria:** commands documented; CI green and required on `main`; preview and production deploys work; invite-only sign-in on production; vertical slice project → prompt → variables → copy in production; authorisation tests; mockups approved.
+**Tasks (in order):** #16 mockups → #17 monorepo skeleton → #18 CI with security scans → #19 test harness → #20 DB schema v0 → #21 environments and deploys (needs Olexiy's Cloudflare + Supabase accounts) → #22 single-user sign-in (sign-up closed; invites come in Phase 2) → #23 security baseline → #24 app shell → #25 vertical slice.
+**Exit criteria:** commands documented; CI green and required on `main`; preview and production deploys work; sign-in on production with sign-up closed; vertical slice project → prompt → variables → copy in production; authorisation tests; mockups approved.
 
 ### Phase 2 — MVP · epic [#11](https://github.com/olexiy/prompt-hub/issues/11)
 **Goal:** "my prompts, online, safely" — Olexiy uses it daily instead of text files.
