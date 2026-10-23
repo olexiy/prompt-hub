@@ -3,3 +3,4 @@ pnpm-lock.yaml
 **/.wrangler
 **/node_modules
 docs/mockups
+apps/api/worker-configuration.d.ts

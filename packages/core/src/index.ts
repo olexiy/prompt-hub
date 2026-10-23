@@ -3,6 +3,8 @@
  * `{{variable}}` renderer. Filled by later tasks (#20 schema, #25 renderer).
  */
 
+export * from "./slug";
+
 /** Product name shown in the UI and in API responses until the final name is chosen (#7). */
 export const APP_NAME = "Prompt Hub";
 

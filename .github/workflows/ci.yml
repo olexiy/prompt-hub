@@ -63,8 +63,40 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
-      - run: pnpm test
+      # Build first: the API tests load wrangler.jsonc, whose assets directory is the web build.
       - run: pnpm build
+      - run: pnpm test
+
+  e2e:
+    name: End-to-end
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      # Google Chrome is preinstalled on the runner; no Playwright browser download.
+      E2E_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm e2e
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7
 
   audit:
     name: Dependency audit
@@ -112,7 +144,7 @@ jobs:
     # The one required status check on main: passes when every job passed or was skipped.
     name: CI result
     if: always()
-    needs: [changes, checks, audit, osv, secrets]
+    needs: [changes, checks, e2e, audit, osv, secrets]
     runs-on: ubuntu-latest
     permissions: {}
     steps:

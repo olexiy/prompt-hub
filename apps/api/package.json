@@ -5,15 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "types": "wrangler types",
     "build": "wrangler deploy --dry-run --outdir dist",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@prompt-hub/core": "workspace:*",
     "hono": "^4.13.13"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261019.1",
+    "@cloudflare/vitest-plugin": "^1.4.6",
+    "@types/node": "^26.6.5",
+    "vitest": "^5.0.5",
     "wrangler": "^4.151.3"
   }
 }

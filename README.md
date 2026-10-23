@@ -65,7 +65,7 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-`dev` builds the web app and serves it together with the API from a local Worker on http://localhost:8787. Other scripts: `lint`, `format`, `format:check`, `typecheck`, `build`; tests come with [#19](https://github.com/olexiy/prompt-hub/issues/19).
+`dev` builds the web app and serves it together with the API from a local Worker on http://localhost:8787. Other scripts: `lint`, `format`, `format:check`, `typecheck`, `build`, `test`, `e2e` (see [docs/testing.md](docs/testing.md)).
 
 ```
 apps/web/       React 19 + Primer React (Vite)

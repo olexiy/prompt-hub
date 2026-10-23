@@ -42,7 +42,8 @@ pnpm is not installed globally: call it as `corepack pnpm …` (Node 24 ships co
 | `corepack pnpm dev:web`                                        | Vite dev server with hot reload, proxies `/api` to :8787 (run `dev` alongside)                       |
 | `corepack pnpm lint` / `format` / `format:check` / `typecheck` | ESLint (strict type-checked), Prettier, `tsc` per package                                            |
 | `corepack pnpm build`                                          | Vite build + `wrangler deploy --dry-run` bundle                                                      |
-| `corepack pnpm test` / e2e                                     | added in #19                                                                                         |
+| `corepack pnpm test`                                           | Vitest: core unit tests, API tests in the Workers runtime                                            |
+| `corepack pnpm e2e`                                            | Playwright on :8788 with the installed Edge/Chrome (run `build` first); see `docs/testing.md`        |
 
 Gotchas: TypeScript stays on 6.0.x until typescript-eslint supports 7; Primer's `ThemeProvider` comes from `@primer/react/next`.
 
