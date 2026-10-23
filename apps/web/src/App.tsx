@@ -1,40 +1,85 @@
-import { APP_NAME, type HealthResponse } from "@prompt-hub/core";
-import { Heading, Label, Text } from "@primer/react";
+import { APP_NAME } from "@prompt-hub/core";
+import { Button, Heading, Spinner, Text } from "@primer/react";
 import { useEffect, useState } from "react";
+import { get, post, type Me } from "./api";
+import { ResetCallback } from "./auth/ResetCallback";
+import { SignIn } from "./auth/SignIn";
 
-type ApiState = { kind: "loading" } | { kind: "ok"; data: HealthResponse } | { kind: "error" };
+type Session = { kind: "loading" } | { kind: "signed-out" } | { kind: "signed-in"; me: Me };
 
-/** Skeleton page: proves React, Primer and the API Worker are wired together. Replaced by the app shell in #24. */
+/** Current session; the API renews an expired access token from the refresh cookie itself. */
+async function resolveSession(): Promise<Session> {
+  try {
+    const { user } = await get<{ user: Me | null }>("/api/auth/session");
+    return user ? { kind: "signed-in", me: user } : { kind: "signed-out" };
+  } catch {
+    return { kind: "signed-out" };
+  }
+}
+
+const isResetCallback = () => window.location.pathname === "/auth/callback";
+
+/** Session gate until the app shell (#24): sign-in, reset callback, or a minimal home. */
 export function App() {
-  const [api, setApi] = useState<ApiState>({ kind: "loading" });
+  const [session, setSession] = useState<Session>({ kind: "loading" });
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/health", { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Health check failed: ${String(res.status)}`);
-        return res.json() as Promise<HealthResponse>;
-      })
-      .then((data) => {
-        setApi({ kind: "ok", data });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setApi({ kind: "error" });
-      });
+    if (isResetCallback()) return;
+    let current = true;
+    void resolveSession().then((s) => {
+      if (current) setSession(s);
+    });
     return () => {
-      controller.abort();
+      current = false;
     };
-  }, []);
+  }, [version]);
+
+  if (isResetCallback()) {
+    return (
+      <ResetCallback
+        onDone={() => {
+          window.location.assign("/");
+        }}
+      />
+    );
+  }
+  if (session.kind === "loading") {
+    return (
+      <main style={{ display: "grid", placeItems: "center", padding: 64 }}>
+        <Spinner />
+      </main>
+    );
+  }
+  if (session.kind === "signed-out") {
+    return (
+      <SignIn
+        onSignedIn={() => {
+          setVersion((v) => v + 1);
+        }}
+      />
+    );
+  }
 
   return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: "64px 16px" }}>
+    <main
+      style={{ maxWidth: 720, margin: "0 auto", padding: "64px 16px", display: "grid", gap: 16 }}
+    >
       <Heading as="h1">{APP_NAME}</Heading>
-      <Text as="p">Store, version and reuse AI prompts. The skeleton is running.</Text>
       <Text as="p">
-        API: {api.kind === "loading" && <Label>checking…</Label>}
-        {api.kind === "ok" && <Label variant="success">{api.data.status}</Label>}
-        {api.kind === "error" && <Label variant="danger">unreachable</Label>}
+        Signed in as <b>{session.me.handle}</b>.
       </Text>
+      <div>
+        <Button
+          onClick={() => {
+            void post("/api/auth/sign-out").finally(() => {
+              setSession({ kind: "signed-out" });
+            });
+          }}
+        >
+          Sign out
+        </Button>
+      </div>
     </main>
   );
 }

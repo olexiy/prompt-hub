@@ -3,7 +3,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../app-env";
 import { clearSession, readSession, setSession } from "./cookies";
+import { createDb } from "@prompt-hub/db";
 import { verifyAccessToken } from "./jwt";
+import { ensureAppUser } from "./users";
 import {
   AuthError,
   refreshSession,
@@ -23,6 +25,27 @@ const recoverySession = z.object({
 const newPassword = z.object({ password: z.string().min(12).max(200) });
 
 export const authRoutes = new Hono<AppEnv>()
+  .get("/session", async (c) => {
+    // Always 200: the app asks "who am I?" on every load, and signed-out is a normal answer.
+    // An expired access token is renewed here with the refresh cookie, server-side.
+    const { access, refresh } = readSession(c);
+    let claims = await verifyAccessToken(access, c.env.SUPABASE_URL);
+    if (!claims && refresh) {
+      try {
+        const renewed = await refreshSession(c.env, refresh);
+        setSession(c, renewed);
+        claims = await verifyAccessToken(renewed.accessToken, c.env.SUPABASE_URL);
+      } catch {
+        clearSession(c);
+      }
+    }
+    if (!claims) return c.json({ user: null });
+    const { id, handle, displayName, locale, theme } = await ensureAppUser(
+      createDb(c.env.HYPERDRIVE.connectionString).db,
+      claims,
+    );
+    return c.json({ user: { id, handle, displayName, locale, theme } });
+  })
   .post("/sign-in", async (c) => {
     const body = credentials.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "Enter an email and a password" }, 400);

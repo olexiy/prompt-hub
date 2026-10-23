@@ -19,12 +19,6 @@ function devVar(name: string): string | undefined {
   }
 }
 
-declare module "vitest" {
-  export interface ProvidedContext {
-    testUser: { email: string; password: string };
-  }
-}
-
 export default async function setup(project: TestProject) {
   const url = process.env.SUPABASE_URL ?? devVar("SUPABASE_URL") ?? "http://127.0.0.1:54321";
   const secret = process.env.SUPABASE_SECRET_KEY ?? devVar("SUPABASE_SECRET_KEY");

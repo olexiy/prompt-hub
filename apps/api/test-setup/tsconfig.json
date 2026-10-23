@@ -1,0 +1,8 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    // Runs in Node (Vitest global setup), not in the Workers runtime.
+    "types": ["node"]
+  },
+  "include": [".", "../test/provided.d.ts"]
+}

@@ -35,3 +35,17 @@ Playwright uses an installed browser instead of downloading its own: **Microsoft
 - Every new endpoint gets an authorisation test proving another user gets 404 (from #22 on).
 - e2e specs fail on any console error; keep that check in new specs.
 - No mocks of our own internals; mock only at the boundary (external HTTP).
+
+## Local Supabase is part of the test setup (#22)
+
+API, DB and e2e tests run against the local Supabase stack (Postgres 17 + Auth), in CI as well:
+
+```bash
+corepack pnpm db:start
+```
+
+```bash
+corepack pnpm db:migrate
+```
+
+`apps/api/.dev.vars` (gitignored) holds `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` from `corepack pnpm exec supabase status -o env`; `DATABASE_URL` / `TEST_DATABASE_URL` = `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Test users are created through the Auth admin API in the global setups (sign-up is closed) and deleted afterwards.

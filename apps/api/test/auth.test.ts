@@ -1,5 +1,4 @@
-import { env } from "cloudflare:test";
-import { exports } from "cloudflare:workers";
+import { env, exports } from "cloudflare:workers";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { describe, expect, inject, it } from "vitest";
 
@@ -148,5 +147,32 @@ describe("sign-up and CSRF", () => {
       body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
     });
     expect(form.status).toBe(415);
+  });
+});
+
+describe("GET /api/auth/session", () => {
+  const session = (cookie?: string) =>
+    exports.default.fetch(`${ORIGIN}/api/auth/session`, { headers: cookie ? { cookie } : {} });
+
+  it("answers 200 with no user when signed out", async () => {
+    const res = await session();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ user: null });
+  });
+
+  it("returns the user when signed in", async () => {
+    const body: { user: { handle: string } | null } = await (await session(await signIn())).json();
+    expect(body.user?.handle).toMatch(/^test-\d+$/);
+  });
+
+  it("renews an expired access token from the refresh cookie", async () => {
+    const refreshOnly = (await signIn())
+      .split("; ")
+      .filter((c) => c.startsWith("__Host-ph_rt="))
+      .join("; ");
+    const res = await session(refreshOnly);
+    const body: { user: { handle: string } | null } = await res.json();
+    expect(body.user).not.toBeNull();
+    expect(res.headers.getSetCookie().some((c) => c.startsWith("__Host-ph_at="))).toBe(true);
   });
 });

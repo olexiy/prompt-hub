@@ -7,7 +7,7 @@
     "dev": "wrangler dev",
     "types": "wrangler types",
     "build": "wrangler deploy --dry-run --outdir dist",
-    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json && tsc -p test-setup/tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
