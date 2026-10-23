@@ -3,5 +3,25 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Drizzle schema and SQL migrations; added in #20."
+  "description": "Drizzle schema, SQL migrations and DB client.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prompt-hub/core": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
 }
