@@ -2,6 +2,10 @@
 
 Newest first. Format: date — decision. _Why._ Alternatives considered.
 
+## 2026-10-23 — Cloud environments: session pooler, table owner via Hyperdrive, public config in the repo (#21)
+
+Staging and production are separate Supabase Free projects in eu-central-1 and separate Workers (`prompt-hub-staging`, `prompt-hub`); the top-level Wrangler Worker is renamed `prompt-hub-local` so a deploy without `--env` cannot overwrite production. Hyperdrive connects through Supavisor in **session mode** (port 5432) as the `postgres` table owner, the same model as #20: RLS without policies shuts out every other role, and the Data API is turned off. Project refs and Hyperdrive ids sit in `wrangler.jsonc`; Supabase publishable keys (public by design, but flagged by gitleaks) come from GitHub environment variables via `--var`; only DB passwords and the Cloudflare API token are secrets. _Why:_ the direct database host is IPv6 only, transaction mode breaks prepared statements; publishable keys are public by design. Alternatives: a dedicated low-privilege DB role (later, once the schema stabilises); a gitleaks allowlist for the keys (rejected: keeps key-shaped strings in a public repo).
+
 ## 2026-10-23 — Phase 1 signs in one hand-created user; invites in Phase 2
 
 Olexiy asked whether invites belong in Phase 1. Phase 1 keeps real authentication (Supabase Auth, sign-up closed, Olexiy's account created by hand, HttpOnly cookie sessions) because the app is on a public URL; invites and Turnstile move to the MVP (Phase 2, feature 103). _Why:_ a "default user" without sign-in would expose private prompts; invite flows are not needed while he is the only user. Alternative: no auth with a default user — rejected.

@@ -1,0 +1,114 @@
+# Deploys (docs/runbooks/deploy.md, docs/research/architecture.md §6).
+# - Pull request: a preview version of the staging Worker (not promoted), URL posted to the PR.
+# - Manual run: migrations → deploy → smoke test, for staging or production. Production runs only
+#   on Olexiy's explicit go; the GitHub "production" environment requires his approval.
+# Secrets live in GitHub environments only (CLOUDFLARE_API_TOKEN scoped to Workers + Hyperdrive,
+# DATABASE_URL for migrations); vars: CLOUDFLARE_ACCOUNT_ID, APP_URL, SUPABASE_PUBLISHABLE_KEY.
+# Nothing is echoed.
+name: Deploy
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target
+        required: true
+        type: choice
+        options: [staging, production]
+
+permissions: {}
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || format('pr-{0}', github.event.pull_request.number) }}
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    name: Preview version (staging)
+    # Fork PRs get no secrets; Dependabot PRs get no preview either. Skipped until the staging
+    # environment is configured (vars.CLOUDFLARE_ACCOUNT_ID set), so PRs stay green before that.
+    if: >-
+      github.event_name == 'pull_request' && vars.CLOUDFLARE_ACCOUNT_ID != '' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @prompt-hub/web build
+      - name: Upload preview version
+        id: upload
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          PR: ${{ github.event.pull_request.number }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          out=$(pnpm --filter @prompt-hub/api exec wrangler versions upload --env staging             --preview-alias "pr-$PR" --var "SUPABASE_PUBLISHABLE_KEY:$SUPABASE_PUBLISHABLE_KEY" 2>&1)
+          url=$(printf '%s\n' "$out" | grep -Eo 'https://pr-[^ ]+\.workers\.dev' | head -1)
+          [ -n "$url" ] || { printf '%s\n' "$out" | tail -20; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Smoke test
+        env:
+          URL: ${{ steps.upload.outputs.url }}
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 3 "$URL/api/health"
+      - name: Post the preview URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.upload.outputs.url }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none             --body "Preview (staging data): $URL"
+
+  deploy:
+    name: Deploy ${{ inputs.environment }}
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.APP_URL }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm db:migrate
+      - run: pnpm --filter @prompt-hub/web build
+      - name: Deploy the Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET: ${{ inputs.environment }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          pnpm --filter @prompt-hub/api exec wrangler deploy --env "$TARGET"             --var "SUPABASE_PUBLISHABLE_KEY:$SUPABASE_PUBLISHABLE_KEY"
+      - name: Smoke test
+        env:
+          URL: ${{ vars.APP_URL }}
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 "$URL/api/health"
+          curl --fail --silent --show-error --head "$URL/" | grep -i '^content-security-policy:'
