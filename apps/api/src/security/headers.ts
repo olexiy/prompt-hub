@@ -19,6 +19,8 @@ export const API_SECURITY_HEADERS: Readonly<Record<string, string>> = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Resource-Policy": "same-origin",
+  // Public project data is for people with the link, not for search engines yet (ADR #53).
+  "X-Robots-Tag": "noindex, nofollow",
   // API answers are per user; no shared or browser cache may keep them.
   "Cache-Control": "no-store",
 };

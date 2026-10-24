@@ -11,7 +11,7 @@ import { NotFound, Placeholder } from "./pages/Placeholder";
 import { ItemPage } from "./pages/ItemPage";
 import { Settings } from "./pages/Settings";
 import { usePathname } from "./router";
-import { Header } from "./shell/Header";
+import { Header, VisitorHeader } from "./shell/Header";
 import { StaleBanner } from "./shell/StaleBanner";
 
 type Session = { kind: "loading" } | { kind: "signed-out" } | { kind: "signed-in"; me: Me };
@@ -96,6 +96,22 @@ export function App() {
         <Spinner />
       </main>
     );
+  } else if (!me && (route.name === "project" || route.name === "item")) {
+    // A signed-out visitor: public projects read-only (#53), anything else is "not found".
+    content = (
+      <>
+        <VisitorHeader route={route} />
+        <main className="ph-page">
+          <ItemPage
+            key={pathname}
+            access="public"
+            handle={route.handle}
+            project={route.project}
+            path={route.name === "item" ? route.path : []}
+          />
+        </main>
+      </>
+    );
   } else if (!me) {
     content = (
       <SignIn
@@ -114,6 +130,7 @@ export function App() {
       page = (
         <ItemPage
           key={pathname}
+          access={route.handle === me.handle ? "owner" : "public"}
           handle={route.handle}
           project={route.project}
           path={route.name === "item" ? route.path : []}

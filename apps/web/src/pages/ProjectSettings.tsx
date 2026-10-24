@@ -1,5 +1,5 @@
 import type { ProjectSummary } from "@prompt-hub/core";
-import { ArchiveIcon, TrashIcon } from "@primer/octicons-react";
+import { ArchiveIcon, EyeIcon, TrashIcon } from "@primer/octicons-react";
 import { Banner, Button, FormControl, Heading, Textarea, TextInput } from "@primer/react";
 import { useState } from "react";
 import { ApiError, del, patch } from "../api";
@@ -55,6 +55,12 @@ export function ProjectSettings({
   const toggleArchive = () =>
     run(async () => {
       await patch(api, { archived: !project.archived });
+      onChanged();
+    });
+
+  const toggleVisibility = () =>
+    run(async () => {
+      await patch(api, { visibility: project.visibility === "PUBLIC" ? "PRIVATE" : "PUBLIC" });
       onChanged();
     });
 
@@ -132,6 +138,24 @@ export function ProjectSettings({
         <Heading as="h2" className="ph-h2">
           {t("settings.dangerZone")}
         </Heading>
+        <div className="ph-row ph-wrap">
+          <p className="ph-grow ph-m0">
+            <b>
+              {project.visibility === "PUBLIC"
+                ? t("settings.makePrivate")
+                : t("settings.makePublic")}
+            </b>
+            <br />
+            <span className="ph-muted">
+              {project.visibility === "PUBLIC"
+                ? t("settings.makePrivateHint")
+                : t("settings.makePublicHint")}
+            </span>
+          </p>
+          <Button leadingVisual={EyeIcon} disabled={busy} onClick={() => void toggleVisibility()}>
+            {project.visibility === "PUBLIC" ? t("settings.makePrivate") : t("settings.makePublic")}
+          </Button>
+        </div>
         <div className="ph-row ph-wrap">
           <p className="ph-grow ph-m0">
             <b>{project.archived ? t("settings.unarchive") : t("settings.archive")}</b>

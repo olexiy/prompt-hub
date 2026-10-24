@@ -50,11 +50,14 @@ export function PromptPage({
   const [values, setValues] = useState<Record<string, string>>({});
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [mode, setMode] = useState<"view" | "edit" | "history" | "duplicate">("view");
+  const isOwner = detail.access === "owner";
   const api = `/api/projects/${handle}/${project}`;
   const itemPath = [...detail.folder, detail.slug].join("/");
   const apiVersions = `${api}/versions/${itemPath}`;
-  // Folder list for "Move", loaded once per prompt page.
-  const [folders] = useApi<{ folders: { path: string[]; name: string }[] }>(`${api}/folders`);
+  // Folder list for "Move", loaded once per prompt page (owner only: the endpoint is private).
+  const [folders] = useApi<{ folders: { path: string[]; name: string }[] }>(
+    isOwner ? `${api}/folders` : null,
+  );
 
   async function moveTo(to: string[]) {
     await patch(`${api}/path/${itemPath}`, { to });
@@ -94,66 +97,70 @@ export function PromptPage({
         <Heading as="h1" className="ph-h3 ph-title ph-grow">
           {title}
         </Heading>
-        <Button
-          size="small"
-          leadingVisual={PencilIcon}
-          aria-pressed={mode === "edit"}
-          onClick={() => {
-            setMode(mode === "edit" ? "view" : "edit");
-          }}
-        >
-          {t("prompt.edit")}
-        </Button>
-        <Button
-          size="small"
-          leadingVisual={HistoryIcon}
-          aria-pressed={mode === "history"}
-          count={detail.versionCount}
-          onClick={() => {
-            setMode(mode === "history" ? "view" : "history");
-          }}
-        >
-          {t("prompt.history")}
-        </Button>
-        <Button
-          size="small"
-          leadingVisual={DuplicateIcon}
-          aria-pressed={mode === "duplicate"}
-          onClick={() => {
-            setMode(mode === "duplicate" ? "view" : "duplicate");
-          }}
-        >
-          {t("prompt.duplicate")}
-        </Button>
-        <ActionMenu>
-          <ActionMenu.Button size="small" leadingVisual={FileDirectoryIcon}>
-            {t("prompt.move")}
-          </ActionMenu.Button>
-          <ActionMenu.Overlay>
-            <ActionList selectionVariant="single">
-              {[
-                { path: [] as string[], name: t("prompt.root") },
-                ...(folders.state === "ok" ? folders.data.folders : []),
-              ].map((f) => (
-                <ActionList.Item
-                  key={f.path.join("/")}
-                  selected={f.path.join("/") === detail.folder.join("/")}
-                  onSelect={() => void moveTo(f.path)}
-                >
-                  {f.path.length === 0 ? f.name : `${f.path.join("/")}/`}
-                </ActionList.Item>
-              ))}
-            </ActionList>
-          </ActionMenu.Overlay>
-        </ActionMenu>
-        <Button
-          size="small"
-          variant="danger"
-          leadingVisual={TrashIcon}
-          onClick={() => void remove()}
-        >
-          {t("item.delete")}
-        </Button>
+        {isOwner && (
+          <>
+            <Button
+              size="small"
+              leadingVisual={PencilIcon}
+              aria-pressed={mode === "edit"}
+              onClick={() => {
+                setMode(mode === "edit" ? "view" : "edit");
+              }}
+            >
+              {t("prompt.edit")}
+            </Button>
+            <Button
+              size="small"
+              leadingVisual={HistoryIcon}
+              aria-pressed={mode === "history"}
+              count={detail.versionCount}
+              onClick={() => {
+                setMode(mode === "history" ? "view" : "history");
+              }}
+            >
+              {t("prompt.history")}
+            </Button>
+            <Button
+              size="small"
+              leadingVisual={DuplicateIcon}
+              aria-pressed={mode === "duplicate"}
+              onClick={() => {
+                setMode(mode === "duplicate" ? "view" : "duplicate");
+              }}
+            >
+              {t("prompt.duplicate")}
+            </Button>
+            <ActionMenu>
+              <ActionMenu.Button size="small" leadingVisual={FileDirectoryIcon}>
+                {t("prompt.move")}
+              </ActionMenu.Button>
+              <ActionMenu.Overlay>
+                <ActionList selectionVariant="single">
+                  {[
+                    { path: [] as string[], name: t("prompt.root") },
+                    ...(folders.state === "ok" ? folders.data.folders : []),
+                  ].map((f) => (
+                    <ActionList.Item
+                      key={f.path.join("/")}
+                      selected={f.path.join("/") === detail.folder.join("/")}
+                      onSelect={() => void moveTo(f.path)}
+                    >
+                      {f.path.length === 0 ? f.name : `${f.path.join("/")}/`}
+                    </ActionList.Item>
+                  ))}
+                </ActionList>
+              </ActionMenu.Overlay>
+            </ActionMenu>
+            <Button
+              size="small"
+              variant="danger"
+              leadingVisual={TrashIcon}
+              onClick={() => void remove()}
+            >
+              {t("item.delete")}
+            </Button>
+          </>
+        )}
       </div>
       {mode === "edit" && (
         <EditPrompt
@@ -188,7 +195,7 @@ export function PromptPage({
           <div className="ph-box ph-main-col">
             <div className="ph-box-head">
               <Label variant="success">{t("prompt.live")}</Label>
-              <b>v{version.number}</b>
+              {isOwner && <b>v{version.number}</b>}
             </div>
             <pre className="ph-prompt-body" data-testid="prompt-preview">
               {tokenizePrompt(version.body).map((s, i) => {
@@ -259,7 +266,11 @@ export function PromptPage({
                 </p>
               </form>
             </div>
-            <MetaBox detail={detail} apiItem={`${api}/path/${itemPath}`} onSaved={onChanged} />
+            <MetaBox
+              detail={detail}
+              apiItem={isOwner ? `${api}/path/${itemPath}` : null}
+              onSaved={onChanged}
+            />
           </aside>
         </div>
       )}

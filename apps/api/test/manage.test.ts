@@ -61,7 +61,7 @@ describe("project settings (#51)", () => {
       const base = await seed(s);
       await request("POST", "/api/projects", { slug: "other", name: "Other" }, s.cookie);
       expect((await request("PATCH", base, { slug: "other" }, s.cookie)).status).toBe(409);
-      for (const body of [{}, { slug: "Bad Slug" }, { name: "" }, { visibility: "PUBLIC" }]) {
+      for (const body of [{}, { slug: "Bad Slug" }, { name: "" }, { owner: "someone" }]) {
         const res = await request("PATCH", base, body, s.cookie);
         expect(res.status, JSON.stringify(body)).toBe(400);
       }

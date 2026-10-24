@@ -8,6 +8,10 @@
  * signed-in user's, or a project/item they do not own, answers 404 — the same as "does not
  * exist", so nothing leaks. Public reads by other users come with #53.
  *
+ * Public reads (#53): `publicProjectRoutes` serve PUBLIC, non-archived projects to anyone,
+ * signed in or not, through the same path resolution but with `toPublic*` redaction: the live
+ * version only, no history, version numbers or the private `note` meta field.
+ *
  * Lifecycle (#51): project settings (rename, new slug, description, archive), final project
  * delete (cascades), prompt duplicate. A changed slug is not redirected: old URLs answer 404.
  */
@@ -23,6 +27,7 @@ import {
   syncDefinitions,
   versionContentSchema,
   versionCreateSchema,
+  type Access,
   type FolderListing,
   type ProjectSummary,
   type PromptDetail,
@@ -35,6 +40,8 @@ import {
   asc,
   desc,
   eq,
+  appUser,
+  createDb,
   folder,
   isNotNull,
   isNull,
@@ -49,6 +56,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import type { AppEnv } from "../app-env";
 import { requireUser } from "../auth/middleware";
+import { rateLimit } from "../security/rate-limit";
 import { parseJson } from "../security/validate";
 
 /** True for a Postgres unique violation anywhere in the error's cause chain (drizzle wraps it). */
@@ -182,6 +190,7 @@ async function listing(
   proj: ProjectRow,
   path: string[],
   dir: { id: string | null; name: string | null },
+  view: { owner: string; access: Access } = { owner: c.get("user").handle, access: "owner" },
 ): Promise<FolderListing> {
   const db = c.get("db");
   const [folders, prompts] = await Promise.all([
@@ -198,8 +207,9 @@ async function listing(
   ]);
   return {
     kind: "folder",
+    access: view.access,
     project: toSummary(proj),
-    owner: c.get("user").handle,
+    owner: view.owner,
     path,
     name: dir.name ?? proj.name,
     folders,
@@ -239,6 +249,7 @@ function toPromptDetail(
 ): PromptDetail {
   return {
     kind: "prompt",
+    access: "owner",
     folder: folderPath,
     slug: row.slug,
     title: row.title,
@@ -276,6 +287,39 @@ async function versionedPrompt(c: Context<AppEnv>) {
   if (!proj || !path || path.length === 0) return null;
   const item = await resolve(c, proj, path);
   return item?.kind === "prompt" ? { proj, item } : null;
+}
+
+/**
+ * What a visitor of a public project sees of a prompt: the live text and variables, meta
+ * without `note`; the version number, message and history size are blanked (ADR #53).
+ */
+function toPublicPrompt(detail: PromptDetail): PromptDetail {
+  const meta = Object.fromEntries(Object.entries(detail.meta).filter(([k]) => k !== "note"));
+  return {
+    ...detail,
+    access: "public",
+    meta,
+    versionCount: 0,
+    version: { ...detail.version, number: 0, message: "" },
+  };
+}
+
+/** A PUBLIC, non-archived project by owner handle and slug, or null; for anyone. */
+async function publicProject(c: Context<AppEnv>): Promise<ProjectRow | null> {
+  const [row] = await c
+    .get("db")
+    .select(summaryColumns)
+    .from(project)
+    .innerJoin(appUser, eq(appUser.id, project.ownerId))
+    .where(
+      and(
+        eq(appUser.handle, c.req.param("handle") ?? ""),
+        eq(project.slug, c.req.param("project") ?? ""),
+        eq(project.visibility, "PUBLIC"),
+        isNull(project.archivedAt),
+      ),
+    );
+  return row ?? null;
 }
 
 const touchProject = (db: Pick<Db, "update">, projectId: string) =>
@@ -736,4 +780,33 @@ export const projectRoutes = new Hono<AppEnv>()
       await tx.delete(promptVersion).where(eq(promptVersion.id, v.id));
     });
     return c.body(null, 204);
+  });
+
+/**
+ * /api/public/projects/* — read-only, no session (#53). Private, archived or missing projects
+ * all answer the same 404. Rate-limited per client IP like writes, since anyone can call it.
+ */
+export const publicProjectRoutes = new Hono<AppEnv>()
+  .use("*", rateLimit("WRITE_LIMITER", "public"))
+  .use("*", async (c, next) => {
+    c.set("db", createDb(c.env.HYPERDRIVE.connectionString).db);
+    await next();
+  })
+  .get("/:handle/:project", async (c) => {
+    const proj = await publicProject(c);
+    if (!proj) return notFound(c);
+    const view = { owner: c.req.param("handle"), access: "public" as const };
+    return c.json(await listing(c, proj, [], { id: null, name: null }, view));
+  })
+  .get("/:handle/:project/path/*", async (c) => {
+    const proj = await publicProject(c);
+    const path = pathSegments(c);
+    if (!proj || !path) return notFound(c);
+    const item = await resolve(c, proj, path);
+    if (!item) return notFound(c);
+    if (item.kind === "folder") {
+      const view = { owner: c.req.param("handle"), access: "public" as const };
+      return c.json(await listing(c, proj, path, item.dir, view));
+    }
+    return c.json(toPublicPrompt(toPromptDetail(item.row, item.parentPath)));
   });

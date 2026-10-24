@@ -29,8 +29,8 @@ export function MetaBox({
   onSaved,
 }: {
   detail: PromptDetail;
-  /** `PATCH` target of the prompt: `/api/projects/{handle}/{project}/path/{path}`. */
-  apiItem: string;
+  /** `PATCH` target of the prompt; null for a read-only view (public visitors, #53). */
+  apiItem: string | null;
   onSaved: () => void;
 }) {
   const { t } = useI18n();
@@ -41,11 +41,12 @@ export function MetaBox({
     return builtIn ? t(builtIn) : key;
   };
 
+  if (!apiItem && rows.length === 0) return null;
   return (
     <section className="ph-box" aria-label={t("meta.title")}>
       <div className="ph-box-head">
         <b className="ph-grow">{t("meta.title")}</b>
-        {!editing && (
+        {!editing && apiItem && (
           <IconButton
             size="small"
             variant="invisible"
@@ -57,7 +58,7 @@ export function MetaBox({
           />
         )}
       </div>
-      {editing ? (
+      {editing && apiItem ? (
         <MetaEditor
           meta={detail.meta}
           apiItem={apiItem}

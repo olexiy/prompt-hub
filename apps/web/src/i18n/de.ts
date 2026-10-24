@@ -58,6 +58,12 @@ export const de: Messages = {
   "auth.invalidLink": "Dieser Link ist ungültig oder abgelaufen. Fordere einen neuen an.",
   "auth.toSignIn": "Zur Anmeldung",
   "error.generic": "Etwas ist schiefgelaufen",
+  "settings.makePublic": "Öffentlich machen",
+  "settings.makePublicHint":
+    "Jede Person mit dem Link kann die aktuelle Version jedes Prompts lesen und kopieren, auch ohne Konto. Verlauf und Notizen bleiben privat.",
+  "settings.makePrivate": "Privat machen",
+  "settings.makePrivateHint":
+    "Nur du siehst das Projekt wieder. Geteilte Links funktionieren nicht mehr.",
   "meta.title": "Meta",
   "meta.edit": "Meta-Felder bearbeiten",
   "meta.empty": "Noch keine Meta-Felder.",

@@ -19,5 +19,8 @@ test("home page loads without console errors and the API is up", async ({ page, 
 test("deep links fall back to the app", async ({ page }) => {
   const res = await page.goto("/olexiy/comfy-h3/bus-stop-9s");
   expect(res?.status()).toBe(200);
+  // Signed out, a project URL is a public read (#53); this one does not exist.
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await page.getByRole("link", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Sign in to Prompt Hub" })).toBeVisible();
 });
