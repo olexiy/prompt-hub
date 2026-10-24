@@ -26,6 +26,7 @@ import { useApi } from "../useApi";
 import { DuplicatePrompt } from "./DuplicatePrompt";
 import { EditPrompt } from "./EditPrompt";
 import { History } from "./History";
+import { MetaBox } from "./MetaBox";
 
 /**
  * `/{handle}/{project}/{prompt}` (mockup: prompt): the body with variables filled in as you
@@ -209,53 +210,56 @@ export function PromptPage({
               <span>{t("prompt.variablesCount", { count: String(defs.length) })}</span>
             </div>
           </div>
-          <aside className="ph-box">
-            <form
-              className="ph-form ph-pad"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void copy();
-              }}
-            >
-              <Heading as="h2" className="ph-h2">
-                {t("prompt.variables")}{" "}
-                <span className="ph-muted ph-small">{t("prompt.fillThenCopy")}</span>
-              </Heading>
-              {defs.length === 0 && <p className="ph-muted">{t("prompt.noVariables")}</p>}
-              {defs.map((d) => (
-                <FormControl key={d.name}>
-                  <FormControl.Label>
-                    <span className="ph-mono">{d.name}</span>
-                  </FormControl.Label>
-                  <TextInput
-                    block
-                    value={values[d.name] ?? ""}
-                    placeholder={d.default ?? ""}
-                    onChange={(e) => {
-                      setValues((v) => ({ ...v, [d.name]: e.target.value }));
-                      setCopyState("idle");
-                    }}
-                  />
-                  {(d.default ?? d.description) && (
-                    <FormControl.Caption>
-                      {d.description ?? t("prompt.default", { value: d.default ?? "" })}
-                    </FormControl.Caption>
-                  )}
-                </FormControl>
-              ))}
-              {unfilled.length > 0 && (
-                <p className="ph-warn" role="note">
-                  <AlertIcon /> {t("prompt.unfilled", { names: unfilled.join(", ") })}
+          <aside className="ph-stack">
+            <div className="ph-box">
+              <form
+                className="ph-form ph-pad"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void copy();
+                }}
+              >
+                <Heading as="h2" className="ph-h2">
+                  {t("prompt.variables")}{" "}
+                  <span className="ph-muted ph-small">{t("prompt.fillThenCopy")}</span>
+                </Heading>
+                {defs.length === 0 && <p className="ph-muted">{t("prompt.noVariables")}</p>}
+                {defs.map((d) => (
+                  <FormControl key={d.name}>
+                    <FormControl.Label>
+                      <span className="ph-mono">{d.name}</span>
+                    </FormControl.Label>
+                    <TextInput
+                      block
+                      value={values[d.name] ?? ""}
+                      placeholder={d.default ?? ""}
+                      onChange={(e) => {
+                        setValues((v) => ({ ...v, [d.name]: e.target.value }));
+                        setCopyState("idle");
+                      }}
+                    />
+                    {(d.default ?? d.description) && (
+                      <FormControl.Caption>
+                        {d.description ?? t("prompt.default", { value: d.default ?? "" })}
+                      </FormControl.Caption>
+                    )}
+                  </FormControl>
+                ))}
+                {unfilled.length > 0 && (
+                  <p className="ph-warn" role="note">
+                    <AlertIcon /> {t("prompt.unfilled", { names: unfilled.join(", ") })}
+                  </p>
+                )}
+                <Button type="submit" variant="primary" leadingVisual={CopyIcon} block>
+                  {t("prompt.copy")}
+                </Button>
+                <p className="ph-muted ph-small" aria-live="polite">
+                  {copyState === "copied" && t("prompt.copied")}
+                  {copyState === "failed" && t("prompt.copyFailed")}
                 </p>
-              )}
-              <Button type="submit" variant="primary" leadingVisual={CopyIcon} block>
-                {t("prompt.copy")}
-              </Button>
-              <p className="ph-muted ph-small" aria-live="polite">
-                {copyState === "copied" && t("prompt.copied")}
-                {copyState === "failed" && t("prompt.copyFailed")}
-              </p>
-            </form>
+              </form>
+            </div>
+            <MetaBox detail={detail} apiItem={`${api}/path/${itemPath}`} onSaved={onChanged} />
           </aside>
         </div>
       )}

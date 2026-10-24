@@ -2,6 +2,10 @@
 
 Newest first. Format: date — decision. _Why._ Alternatives considered.
 
+## 2026-10-24 — Prompt meta: one JSONB map, two built-in keys, fixed display order (#52)
+
+Meta stays in `prompt.meta` (JSONB, no migration). `description` and `note` are built-in keys shown translated and first; every other key is a user label (letters of any script, digits, space, `._-`, ≤ 40 chars), shown as typed and sorted alphabetically. At most 20 fields, values ≤ 5000 chars, plain text only. A PATCH replaces the whole map; empty values remove a field. Meta is per prompt, not per version. _Why:_ JSONB does not keep key order, so a fixed order (built-in, then A–Z) is predictable without storing positions; whole-map replace keeps the API to one change type. Alternatives: an ordered array of `{key, value}` (needs a migration and reorder UI; revisit with prompt templates, feature 87), versioned meta (the fields describe the prompt, not a text state).
+
 ## 2026-10-24 — Slug changes are not redirected; project delete confirmed by typing its name (#51)
 
 A new project or prompt slug moves the item; old URLs answer 404 like any missing page. The settings form says so before saving ("Old links to this project stop working"). Project delete is final and cascades (feature 15); the web app enables the button only after the exact project name is typed, the API itself needs no extra confirmation field. Duplicating a prompt copies its current version as v1 of a new prompt in the same folder (meta and type too), with the version label "Copied from <slug> v<n>". _Why:_ projects are private until #53 and links are mostly the owner's own bookmarks; a redirect table costs a schema change, lookups on every miss and rules for chains and reused slugs. A 404 never leaks whether a slug existed. Alternatives: GitHub-style redirects from old slugs (revisit with public projects, v2), typing `owner/slug` instead of the name (the name is what the user sees), copying the whole history on duplicate (the copy is meant as a fresh variant).

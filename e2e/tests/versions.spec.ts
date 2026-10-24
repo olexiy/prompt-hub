@@ -43,7 +43,7 @@ test("new version by button, history, restore, plain save edits in place", async
   await expect(page.getByRole("heading", { name: "Letter" })).toBeVisible();
 
   // Edit: new text with a new variable and its default, a new title; no change-message field.
-  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByLabel(/^Title/).fill("Brief");
   await page.getByLabel("Prompt text").fill("Liebe(r) {{name}}, zweiter Entwurf über {{тема}}.");
   await page.getByRole("group", { name: "тема" }).getByLabel("Default").fill("Urlaub");
@@ -76,7 +76,7 @@ test("new version by button, history, restore, plain save edits in place", async
   await expect(page.getByText("v3", { exact: true })).toBeVisible();
 
   // A plain save edits v3 in place: no v4 appears.
-  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByLabel("Prompt text").fill("Dear {{name}}, final draft.");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByTestId("prompt-preview")).toContainText("final draft");
