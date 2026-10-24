@@ -6,6 +6,7 @@ import type { AppEnv } from "./app-env";
 import { requireUser, sameOrigin } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
 import { projectRoutes, publicProjectRoutes, tagRoutes } from "./projects/routes";
+import { searchRoutes } from "./projects/search";
 import { buildCheck } from "./security/build";
 import { handleError, handleNotFound } from "./security/errors";
 import { securityHeaders } from "./security/headers";
@@ -32,6 +33,7 @@ app.route("/auth", authRoutes);
 app.route("/projects", projectRoutes);
 app.route("/public/projects", publicProjectRoutes);
 app.route("/tags", tagRoutes);
+app.route("/search", searchRoutes);
 
 app.get("/me", requireUser, (c) => {
   const { id, handle, displayName, locale, theme } = c.get("user");

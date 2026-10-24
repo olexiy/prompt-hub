@@ -9,5 +9,8 @@ export default defineConfig({
   plugins: [cloudflareTest({ wrangler: { configPath: "./wrangler.jsonc" } })],
   test: {
     globalSetup: ["./test-setup/global-setup.ts"],
+    // Every test signs users in through the local Supabase Auth (bcrypt by design), so many files
+    // at once can starve a busy machine; CI has its own runner and keeps the default.
+    ...(process.env.CI ? {} : { maxWorkers: 2 }),
   },
 });

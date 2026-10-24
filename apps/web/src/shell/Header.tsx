@@ -1,10 +1,10 @@
 import { routePath, type Route, type Theme } from "@prompt-hub/core";
 import { DeviceDesktopIcon, MoonIcon, SearchIcon, SunIcon } from "@primer/octicons-react";
 import { ActionList, ActionMenu, Button, IconButton, TextInput } from "@primer/react";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { Me } from "../api";
 import { useI18n } from "../i18n";
-import { handleLinkClick, RouterLink } from "../router";
+import { handleLinkClick, navigate, RouterLink, useQueryParam } from "../router";
 
 const NEXT_THEME: Record<Theme, Theme> = { system: "light", light: "dark", dark: "system" };
 const THEME_ICON = { system: DeviceDesktopIcon, light: SunIcon, dark: MoonIcon } as const;
@@ -53,6 +53,36 @@ export function Header({
 }) {
   const { t } = useI18n();
   const ThemeIcon = THEME_ICON[me.theme];
+  const current = useQueryParam("q");
+  const onSearch = route.name === "search";
+  // The box shows the query of the results page; elsewhere it starts empty. Synced while
+  // rendering when the URL changes (React's "adjust state on prop change" pattern).
+  const wanted = onSearch ? current : "";
+  const [synced, setSynced] = useState(wanted);
+  const [query, setQuery] = useState(wanted);
+  if (synced !== wanted) {
+    setSynced(wanted);
+    setQuery(wanted);
+  }
+  const input = useRef<HTMLInputElement>(null);
+
+  // "/" focuses the search box unless the user is typing somewhere (mockup, GitHub).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target?.isContentEditable === true ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? "");
+      if (e.key === "/" && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        input.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
   return (
     <header className="ph-header">
       <div className="ph-header-inner">
@@ -63,15 +93,29 @@ export function Header({
           <span className="ph-logo-text">Prompt Hub</span>
         </RouterLink>
         <Breadcrumb route={route} />
-        <TextInput
+        <form
           className="ph-search"
-          leadingVisual={SearchIcon}
-          trailingVisual={<kbd className="ph-kbd">/</kbd>}
-          placeholder={t("header.search")}
-          aria-label={t("header.search")}
-          title={t("header.searchSoon")}
-          readOnly
-        />
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+          }}
+        >
+          <TextInput
+            ref={input}
+            block
+            type="search"
+            leadingVisual={SearchIcon}
+            trailingVisual={<kbd className="ph-kbd">/</kbd>}
+            placeholder={t("header.search")}
+            aria-label={t("header.search")}
+            value={query}
+            maxLength={200}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
+          />
+        </form>
         <IconButton
           icon={ThemeIcon}
           variant="invisible"

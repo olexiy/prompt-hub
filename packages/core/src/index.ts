@@ -9,6 +9,7 @@ export * from "./meta";
 export * from "./prefs";
 export * from "./projects";
 export * from "./routes";
+export * from "./search";
 export * from "./variables";
 export * from "./slug";
 export * from "./tags";

@@ -9,8 +9,9 @@ import { I18nProvider } from "./i18n";
 import { Dashboard } from "./pages/Dashboard";
 import { NotFound, Placeholder } from "./pages/Placeholder";
 import { ItemPage } from "./pages/ItemPage";
+import { SearchPage } from "./pages/SearchPage";
 import { Settings } from "./pages/Settings";
-import { usePathname } from "./router";
+import { usePathname, useQueryParam } from "./router";
 import { Header, VisitorHeader } from "./shell/Header";
 import { StaleBanner } from "./shell/StaleBanner";
 
@@ -49,6 +50,7 @@ function Frame({ locale, theme, children }: { locale: Locale; theme: Theme; chil
 /** Session gate, then the app shell: header plus the page for the current URL. */
 export function App() {
   const pathname = usePathname();
+  const searchQuery = useQueryParam("q");
   const route = parseRoute(pathname);
   const [session, setSession] = useState<Session>({ kind: "loading" });
   const [version, setVersion] = useState(0);
@@ -124,6 +126,7 @@ export function App() {
     let page: ReactNode;
     if (route.name === "home") page = <Dashboard handle={me.handle} />;
     else if (route.name === "settings") page = <Settings me={me} onSave={savePrefs} />;
+    else if (route.name === "search") page = <SearchPage handle={me.handle} query={searchQuery} />;
     else if (route.name === "notFound") page = <NotFound />;
     else if (route.name === "project" || route.name === "item") {
       // The project root, a folder or a prompt: the API resolves the path.

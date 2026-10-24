@@ -8,6 +8,7 @@ import { isValidSlug } from "./slug";
 export type Route =
   | { name: "home" }
   | { name: "settings" }
+  | { name: "search" }
   | { name: "resetCallback" }
   | { name: "user"; handle: string }
   | { name: "project"; handle: string; project: string }
@@ -21,6 +22,8 @@ export function parseRoute(pathname: string): Route {
   const segments = pathname.split("/").filter((s) => s !== "");
   if (segments.length === 0) return { name: "home" };
   if (segments.length === 1 && segments[0] === "settings") return { name: "settings" };
+  // The query lives in `?q=` (#55); the route only names the page.
+  if (segments.length === 1 && segments[0] === "search") return { name: "search" };
   if (segments.length === 2 && segments[0] === "auth" && segments[1] === "callback") {
     return { name: "resetCallback" };
   }
@@ -40,6 +43,8 @@ export function routePath(route: Route): string {
       return "/";
     case "settings":
       return "/settings";
+    case "search":
+      return "/search";
     case "resetCallback":
       return "/auth/callback";
     case "user":
