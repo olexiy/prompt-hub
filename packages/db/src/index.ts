@@ -5,7 +5,7 @@ import * as schema from "./schema";
 
 export * from "./schema";
 // Re-exported so every package uses the one drizzle-orm instance resolved here.
-export { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+export { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 export { schema };
 
 /**

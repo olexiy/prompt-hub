@@ -19,6 +19,21 @@ export const projectCreateSchema = z.strictObject({
 });
 export type ProjectCreate = z.input<typeof projectCreateSchema>;
 
+/**
+ * Project settings (#51): any of name, URL slug, description, archived. A new slug moves the
+ * project; old URLs then answer 404 (no redirects, see decisions.md).
+ */
+export const projectPatchSchema = z
+  .strictObject({
+    slug,
+    name: z.string().trim().min(1).max(100),
+    description: z.string().trim().max(1000),
+    archived: z.boolean(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, "Nothing to change");
+export type ProjectPatch = z.input<typeof projectPatchSchema>;
+
 export const folderCreateSchema = z.strictObject({
   parent: folderPathSchema.default([]),
   slug,
@@ -50,6 +65,13 @@ export const itemPatchSchema = z
   .refine((v) => Object.keys(v).length === 1, "Exactly one change");
 export type ItemPatch = z.input<typeof itemPatchSchema>;
 
+/** Duplicate a prompt (#51): the copy lands in the same folder, its current version as v1. */
+export const promptCopySchema = z.strictObject({
+  slug,
+  title: z.string().trim().min(1).max(200),
+});
+export type PromptCopy = z.input<typeof promptCopySchema>;
+
 export type Visibility = "PRIVATE" | "PUBLIC";
 
 export interface ProjectSummary {
@@ -57,6 +79,8 @@ export interface ProjectSummary {
   name: string;
   description: string;
   visibility: Visibility;
+  /** Archived projects are hidden from the dashboard list but stay reachable by URL. */
+  archived: boolean;
   promptCount: number;
   updatedAt: string;
 }

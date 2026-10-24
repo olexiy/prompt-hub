@@ -1,5 +1,5 @@
 import type { ProjectSummary } from "@prompt-hub/core";
-import { PlusIcon, RepoIcon } from "@primer/octicons-react";
+import { ArchiveIcon, PlusIcon, RepoIcon } from "@primer/octicons-react";
 import { Button, Heading, Label, Spinner, Text, TextInput } from "@primer/react";
 import { useState } from "react";
 import { useI18n } from "../i18n";
@@ -7,10 +7,16 @@ import { navigate, RouterLink } from "../router";
 import { useApi } from "../useApi";
 import { CreateForm } from "./CreateForm";
 
-/** Projects overview (mockup: dashboard): own projects, newest first, and "New project". */
+/**
+ * Projects overview (mockup: dashboard): own projects, newest first, and "New project". The
+ * "Archived" toggle (#51) lists the archived projects instead.
+ */
 export function Dashboard({ handle }: { handle: string }) {
   const { t, locale } = useI18n();
-  const [loaded] = useApi<{ projects: ProjectSummary[] }>("/api/projects");
+  const [archived, setArchived] = useState(false);
+  const [loaded] = useApi<{ projects: ProjectSummary[] }>(
+    archived ? "/api/projects?archived=1" : "/api/projects",
+  );
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("");
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
@@ -55,6 +61,15 @@ export function Dashboard({ handle }: { handle: string }) {
               setFilter(e.target.value);
             }}
           />
+          <Button
+            leadingVisual={ArchiveIcon}
+            aria-pressed={archived}
+            onClick={() => {
+              setArchived(!archived);
+            }}
+          >
+            {t("dashboard.showArchived")}
+          </Button>
           <Button variant="primary" leadingVisual={PlusIcon} onClick={newProject}>
             {t("dashboard.newProject")}
           </Button>
@@ -80,7 +95,10 @@ export function Dashboard({ handle }: { handle: string }) {
           </div>
         )}
         {loaded.state === "error" && <p className="ph-muted">{t("error.load")}</p>}
-        {loaded.state === "ok" && projects.length === 0 && !creating && (
+        {loaded.state === "ok" && archived && projects.length === 0 && (
+          <p className="ph-muted">{t("dashboard.noArchived")}</p>
+        )}
+        {loaded.state === "ok" && !archived && projects.length === 0 && !creating && (
           <div className="ph-blank">
             <RepoIcon size={24} />
             <Heading as="h3" className="ph-h3">
@@ -99,6 +117,7 @@ export function Dashboard({ handle }: { handle: string }) {
                 <Label>
                   {p.visibility === "PUBLIC" ? t("dashboard.public") : t("dashboard.private")}
                 </Label>
+                {p.archived && <Label variant="attention">{t("project.archived")}</Label>}
               </h3>
               {p.description && <p className="ph-muted">{p.description}</p>}
               <div className="ph-meta-line">
