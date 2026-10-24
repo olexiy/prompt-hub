@@ -188,7 +188,7 @@ export const promptVersion = pgTable(
   ],
 );
 
-/** Tags belong to their owner and can be put on projects and prompts (features 45, 74). */
+/** Tags belong to their owner and can be put on projects and prompts (features 45, 74; #54). */
 export const tag = pgTable(
   "tag",
   {
@@ -200,7 +200,10 @@ export const tag = pgTable(
   },
   (t) => [
     unique("tag_owner_name_key").on(t.ownerId, t.name),
-    slugCheck("tag_name_check", sql`${t.name}`),
+    // Unicode names (#54): the full rule (lowercase letters/digits of any script, single hyphens)
+    // is `isTagName` in packages/core; the database only guards length and whitespace, since
+    // its regex classes and lower() depend on the server locale.
+    check("tag_name_check", sql`length(${t.name}) between 1 and 32 and ${t.name} !~ '[[:space:]]'`),
   ],
 );
 

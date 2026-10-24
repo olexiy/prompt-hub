@@ -59,6 +59,18 @@ export const en = {
   "auth.invalidLink": "This link is invalid or has expired. Request a new one.",
   "auth.toSignIn": "Back to sign in",
   "error.generic": "Something went wrong",
+  "tags.label": "Topics",
+  "tags.filtered": "Topic: {tag}",
+  "tags.clearFilter": "Clear topic filter",
+  "tags.add": "Add topics",
+  "tags.edit": "Edit topics",
+  "tags.input": "Topics, separated by commas",
+  "tags.placeholder": "e.g. video, minimax-h3",
+  "tags.hint":
+    "Separated by commas. Lowercase letters (any language), digits and hyphens; spaces become hyphens.",
+  "tags.invalid": "Topic “{tag}” is not allowed. Use letters, digits and hyphens.",
+  "tags.tooMany": "At most {max} topics.",
+  "project.filter": "Filter by title or topic",
   "settings.makePublic": "Make public",
   "settings.makePublicHint":
     "Anyone with the link can read the live version of every prompt and copy it, also without an account. History and notes stay private.",

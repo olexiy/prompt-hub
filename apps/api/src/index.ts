@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { AppEnv } from "./app-env";
 import { requireUser, sameOrigin } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
-import { projectRoutes, publicProjectRoutes } from "./projects/routes";
+import { projectRoutes, publicProjectRoutes, tagRoutes } from "./projects/routes";
 import { buildCheck } from "./security/build";
 import { handleError, handleNotFound } from "./security/errors";
 import { securityHeaders } from "./security/headers";
@@ -31,6 +31,7 @@ app.get("/health", (c) => c.json({ status: "ok", app: APP_NAME } satisfies Healt
 app.route("/auth", authRoutes);
 app.route("/projects", projectRoutes);
 app.route("/public/projects", publicProjectRoutes);
+app.route("/tags", tagRoutes);
 
 app.get("/me", requireUser, (c) => {
   const { id, handle, displayName, locale, theme } = c.get("user");

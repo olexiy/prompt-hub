@@ -58,6 +58,19 @@ export const de: Messages = {
   "auth.invalidLink": "Dieser Link ist ungültig oder abgelaufen. Fordere einen neuen an.",
   "auth.toSignIn": "Zur Anmeldung",
   "error.generic": "Etwas ist schiefgelaufen",
+  "tags.label": "Themen",
+  "tags.filtered": "Thema: {tag}",
+  "tags.clearFilter": "Themenfilter entfernen",
+  "tags.add": "Themen hinzufügen",
+  "tags.edit": "Themen bearbeiten",
+  "tags.input": "Themen, durch Kommas getrennt",
+  "tags.placeholder": "z. B. video, minimax-h3",
+  "tags.hint":
+    "Durch Kommas getrennt. Kleinbuchstaben (jede Sprache), Ziffern und Bindestriche; Leerzeichen werden zu Bindestrichen.",
+  "tags.invalid":
+    "Das Thema „{tag}“ ist nicht erlaubt. Erlaubt sind Buchstaben, Ziffern und Bindestriche.",
+  "tags.tooMany": "Höchstens {max} Themen.",
+  "project.filter": "Nach Titel oder Thema filtern",
   "settings.makePublic": "Öffentlich machen",
   "settings.makePublicHint":
     "Jede Person mit dem Link kann die aktuelle Version jedes Prompts lesen und kopieren, auch ohne Konto. Verlauf und Notizen bleiben privat.",

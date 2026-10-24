@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useI18n } from "../i18n";
 import { navigate, RouterLink } from "../router";
 import { useApi } from "../useApi";
+import { TagChips, TagFilter } from "../shell/Tags";
 import { CreateForm } from "./CreateForm";
 
 /**
@@ -19,11 +20,17 @@ export function Dashboard({ handle }: { handle: string }) {
   );
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("");
+  // A clicked topic chip (#54); combines with the text filter.
+  const [tag, setTag] = useState<string | null>(null);
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
 
   const projects = loaded.state === "ok" ? loaded.data.projects : [];
-  const shown = projects.filter((p) =>
-    `${p.slug} ${p.name} ${p.description}`.toLowerCase().includes(filter.trim().toLowerCase()),
+  const shown = projects.filter(
+    (p) =>
+      (tag === null || p.tags.includes(tag)) &&
+      `${p.slug} ${p.name} ${p.description} ${p.tags.join(" ")}`
+        .toLowerCase()
+        .includes(filter.trim().toLowerCase()),
   );
   const newProject = () => {
     setCreating(true);
@@ -110,6 +117,14 @@ export function Dashboard({ handle }: { handle: string }) {
           </div>
         )}
         <div className="ph-mt">
+          {tag && (
+            <TagFilter
+              tag={tag}
+              onClear={() => {
+                setTag(null);
+              }}
+            />
+          )}
           {shown.map((p) => (
             <article className="ph-proj-row" key={p.slug}>
               <h3>
@@ -120,6 +135,7 @@ export function Dashboard({ handle }: { handle: string }) {
                 {p.archived && <Label variant="attention">{t("project.archived")}</Label>}
               </h3>
               {p.description && <p className="ph-muted">{p.description}</p>}
+              <TagChips tags={p.tags} active={tag} onSelect={setTag} />
               <div className="ph-meta-line">
                 <span>{t("dashboard.promptCount", { count: String(p.promptCount) })}</span>
                 <span>{t("dashboard.updated", { date: date.format(new Date(p.updatedAt)) })}</span>
