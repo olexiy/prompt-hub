@@ -59,6 +59,10 @@ export const en = {
   "auth.invalidLink": "This link is invalid or has expired. Request a new one.",
   "auth.toSignIn": "Back to sign in",
   "error.generic": "Something went wrong",
+  "stale.title": "A new version is available",
+  "stale.body":
+    "This tab runs an older version of Prompt Hub. Reload to keep working; unsaved text in open forms is lost.",
+  "stale.reload": "Reload",
   "dashboard.private": "Private",
   "dashboard.public": "Public",
   "dashboard.promptCount": "Prompts: {count}",

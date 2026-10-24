@@ -2,6 +2,10 @@
 
 Newest first. Format: date — decision. _Why._ Alternatives considered.
 
+## 2026-10-24 — Stale tabs: build id from the deployed assets, writes refused (#73)
+
+Each web build writes a random id to `dist/build.json` and into the bundle; the Worker reads the file through its `ASSETS` binding (once per isolate) and sends it as `X-App-Build`. The client shows a reload banner on a mismatch and stops sending writes; the API refuses writes whose `X-App-Build` differs with 409. _Why:_ Worker and assets deploy as one version, so the id can never disagree with what is served, and no build step has to pass the id between the web and API packages; refusing writes on the server also covers a tab whose first request after a deploy is the write itself. Alternatives: polling `/build.json` from the client (no protection for the first write), a git SHA as id (equal for staging and production builds of one commit, and for local rebuilds), a service worker (more moving parts than the problem needs).
+
 ## 2026-10-23 — Cloud environments: session pooler, table owner via Hyperdrive, public config in the repo (#21)
 
 Staging and production are separate Supabase Free projects in eu-central-1 and separate Workers (`prompt-hub-staging`, `prompt-hub`); the top-level Wrangler Worker is renamed `prompt-hub-local` so a deploy without `--env` cannot overwrite production. Hyperdrive connects through Supavisor in **session mode** (port 5432) as the `postgres` table owner, the same model as #20: RLS without policies shuts out every other role, and the Data API is turned off. Project refs and Hyperdrive ids sit in `wrangler.jsonc`; Supabase publishable keys (public by design, but flagged by gitleaks) come from GitHub environment variables via `--var`; only DB passwords and the Cloudflare API token are secrets. _Why:_ the direct database host is IPv6 only, transaction mode breaks prepared statements; publishable keys are public by design. Alternatives: a dedicated low-privilege DB role (later, once the schema stabilises); a gitleaks allowlist for the keys (rejected: keeps key-shaped strings in a public repo).

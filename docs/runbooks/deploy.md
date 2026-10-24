@@ -62,6 +62,8 @@ GitHub variables: `CLOUDFLARE_ACCOUNT_ID` at repository level (the preview job's
   corepack pnpm --filter @prompt-hub/api exec wrangler deploy --env staging --var SUPABASE_PUBLISHABLE_KEY:<key>
   ```
 
+- **Open tabs after a deploy** (#73): every web build gets a fresh id (`dist/build.json`, also baked into the bundle). The Worker reads it from its own assets and returns it as `X-App-Build` on every `/api` response; a tab of an older build shows "A new version is available — Reload" on its next API call or when it gets focus, and sends no writes. The API refuses writes that carry another build id with 409 (clients that send no id, such as scripts, are not affected). The same applies after a rollback. The Vite dev server (`dev:web`) uses the id `dev` and skips the check.
+
 ## Rollback
 
 Tested on staging 2026-10-23: `wrangler rollback <previous version id> --env staging` switched 100% of traffic back in seconds; `/api/health` stayed up.

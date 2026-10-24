@@ -1,5 +1,6 @@
 /** Minimal JSON client for our own API; the session travels in HttpOnly cookies automatically. */
 import type { Locale, Theme } from "@prompt-hub/core";
+import { buildHeaders, isStale, noteBuild } from "./build";
 
 export class ApiError extends Error {
   constructor(
@@ -11,13 +12,14 @@ export class ApiError extends Error {
 }
 
 async function handle<T>(res: Response): Promise<T> {
+  noteBuild(res);
   const body = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) throw new ApiError(res.status, body.error ?? "Something went wrong");
   return body;
 }
 
 export async function get<T>(path: string): Promise<T> {
-  return handle<T>(await fetch(path, { credentials: "same-origin" }));
+  return handle<T>(await fetch(path, { credentials: "same-origin", headers: buildHeaders() }));
 }
 
 export async function post<T = { ok: true }>(path: string, body: unknown = {}): Promise<T> {
@@ -33,20 +35,27 @@ export async function put<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function del(path: string): Promise<void> {
+  refuseIfStale();
   const res = await fetch(path, {
     method: "DELETE",
     credentials: "same-origin",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...buildHeaders() },
   });
   if (!res.ok) await handle(res);
 }
 
+/** An old tab sends no writes: what it would send may not match the new API (#73). */
+function refuseIfStale() {
+  if (isStale()) throw new ApiError(409, "A new version of the app is available. Reload the page.");
+}
+
 async function send<T>(method: string, path: string, body: unknown): Promise<T> {
+  refuseIfStale();
   return handle<T>(
     await fetch(path, {
       method,
       credentials: "same-origin",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...buildHeaders() },
       body: JSON.stringify(body),
     }),
   );

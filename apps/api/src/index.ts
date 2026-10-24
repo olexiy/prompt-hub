@@ -6,6 +6,7 @@ import type { AppEnv } from "./app-env";
 import { requireUser, sameOrigin } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
 import { projectRoutes } from "./projects/routes";
+import { buildCheck } from "./security/build";
 import { handleError, handleNotFound } from "./security/errors";
 import { securityHeaders } from "./security/headers";
 import { limitWrites } from "./security/rate-limit";
@@ -21,6 +22,7 @@ const app = new Hono<AppEnv>().basePath("/api");
 // Order matters: headers wrap everything (also errors), cheap rejections run before any work.
 app.use("*", securityHeaders);
 app.use("*", sameOrigin);
+app.use("*", buildCheck());
 app.use("*", limitBody);
 app.use("*", limitWrites);
 

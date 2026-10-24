@@ -58,6 +58,10 @@ export const de: Messages = {
   "auth.invalidLink": "Dieser Link ist ungültig oder abgelaufen. Fordere einen neuen an.",
   "auth.toSignIn": "Zur Anmeldung",
   "error.generic": "Etwas ist schiefgelaufen",
+  "stale.title": "Eine neue Version ist verfügbar",
+  "stale.body":
+    "Dieser Tab läuft mit einer älteren Version von Prompt Hub. Neu laden, um weiterzuarbeiten; ungespeicherter Text in offenen Formularen geht verloren.",
+  "stale.reload": "Neu laden",
   "dashboard.private": "Privat",
   "dashboard.public": "Öffentlich",
   "dashboard.promptCount": "Prompts: {count}",
