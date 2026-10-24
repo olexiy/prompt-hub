@@ -58,6 +58,10 @@ export const ru: Messages = {
   "auth.invalidLink": "Ссылка недействительна или устарела. Запросите новую.",
   "auth.toSignIn": "Ко входу",
   "error.generic": "Что-то пошло не так",
+  "stale.title": "Доступна новая версия",
+  "stale.body":
+    "Эта вкладка работает со старой версией Prompt Hub. Перезагрузите её, чтобы продолжить; несохранённый текст в открытых формах пропадёт.",
+  "stale.reload": "Перезагрузить",
   "dashboard.private": "Приватный",
   "dashboard.public": "Публичный",
   "dashboard.promptCount": "Промптов: {count}",

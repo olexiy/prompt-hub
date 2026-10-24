@@ -19,6 +19,15 @@ body {
   min-width: 0;
 }
 
+/* Reload prompt for a tab older than the deployed app (#73), above everything else. */
+.ph-stale {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 8px 16px;
+  background-color: var(--bgColor-default);
+}
+
 .ph-center {
   display: grid;
   place-items: center;

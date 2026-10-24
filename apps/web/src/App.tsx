@@ -12,6 +12,7 @@ import { ItemPage } from "./pages/ItemPage";
 import { Settings } from "./pages/Settings";
 import { usePathname } from "./router";
 import { Header } from "./shell/Header";
+import { StaleBanner } from "./shell/StaleBanner";
 
 type Session = { kind: "loading" } | { kind: "signed-out" } | { kind: "signed-in"; me: Me };
 
@@ -36,7 +37,10 @@ function Frame({ locale, theme, children }: { locale: Locale; theme: Theme; chil
     <ThemeProvider colorMode={COLOR_MODE[theme]}>
       {/* Theme variables live on the provider's element, so it paints the page background itself. */}
       <BaseStyles className="ph-root">
-        <I18nProvider locale={locale}>{children}</I18nProvider>
+        <I18nProvider locale={locale}>
+          <StaleBanner />
+          {children}
+        </I18nProvider>
       </BaseStyles>
     </ThemeProvider>
   );
