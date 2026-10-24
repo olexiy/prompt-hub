@@ -3,6 +3,7 @@
  * and the web app (forms, typed responses). Limits mirror the database checks.
  */
 import { z } from "zod";
+import { metaSchema, type Meta } from "./meta";
 import { MAX_ITEM_DEPTH } from "./routes";
 import { isValidSlug } from "./slug";
 import { MAX_PROMPT_BODY, variableDefsSchema, type VariableDef } from "./variables";
@@ -52,7 +53,8 @@ export type PromptCreate = z.input<typeof promptCreateSchema>;
 
 /**
  * PATCH on a path, exactly one change: rename a folder (`name`); move a prompt into another
- * folder (`to`), retitle it (`title`) or change its URL slug (`slug`).
+ * folder (`to`), retitle it (`title`), change its URL slug (`slug`) or replace its meta fields
+ * (`meta`, the whole map, #52).
  */
 export const itemPatchSchema = z
   .strictObject({
@@ -60,6 +62,7 @@ export const itemPatchSchema = z
     to: folderPathSchema,
     title: z.string().trim().min(1).max(200),
     slug,
+    meta: metaSchema,
   })
   .partial()
   .refine((v) => Object.keys(v).length === 1, "Exactly one change");
@@ -143,6 +146,8 @@ export interface PromptDetail extends PromptSummary {
   folder: string[];
   /** Number of stored versions (history size). */
   versionCount: number;
+  /** Meta fields (#52); order them for display with `orderMeta`. */
+  meta: Meta;
   /** The current (live) version. */
   version: VersionDetail;
 }

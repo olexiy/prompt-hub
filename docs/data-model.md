@@ -17,16 +17,16 @@ erDiagram
   app_user ||--o{ invite : creates
 ```
 
-| Table                              | Purpose                              | Notes                                                                                                                                       |
-| ---------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app_user`                         | person; `id` = Supabase Auth user id | `handle` unique slug; locale en/ru/de; theme; plan FREE/PRO                                                                                 |
-| `project`                          | top-level container                  | slug unique per owner; visibility PRIVATE/PUBLIC; `search` tsvector (name + description)                                                    |
-| `folder`                           | optional, nestable                   | slug unique per parent (NULLS NOT DISTINCT)                                                                                                 |
-| `prompt`                           | a prompt                             | slug unique per folder; type TEXT/CHAT/MEDIA; `current_version_id` = live version (SET NULL if deleted); `meta` JSONB key–value fields      |
-| `prompt_version`                   | immutable snapshot                   | `number` unique per prompt; `body`; `variables` JSONB `[{name,type,default,description,options}]`; `sections` JSONB (v1); `search` tsvector |
-| `tag`, `project_tag`, `prompt_tag` | owner's tags on projects and prompts | tag names follow the slug rule                                                                                                              |
-| `invite`                           | single-use invites (Phase 2)         | only a hash of the code                                                                                                                     |
-| `plan_limit`                       | limits per plan                      | seeded: FREE 25 projects / 250 prompts, PRO unlimited; enforced from v3                                                                     |
+| Table                              | Purpose                              | Notes                                                                                                                                                                              |
+| ---------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app_user`                         | person; `id` = Supabase Auth user id | `handle` unique slug; locale en/ru/de; theme; plan FREE/PRO                                                                                                                        |
+| `project`                          | top-level container                  | slug unique per owner; visibility PRIVATE/PUBLIC; `search` tsvector (name + description)                                                                                           |
+| `folder`                           | optional, nestable                   | slug unique per parent (NULLS NOT DISTINCT)                                                                                                                                        |
+| `prompt`                           | a prompt                             | slug unique per folder; type TEXT/CHAT/MEDIA; `current_version_id` = live version (SET NULL if deleted); `meta` JSONB key–value fields (#52, rules in `packages/core/src/meta.ts`) |
+| `prompt_version`                   | immutable snapshot                   | `number` unique per prompt; `body`; `variables` JSONB `[{name,type,default,description,options}]`; `sections` JSONB (v1); `search` tsvector                                        |
+| `tag`, `project_tag`, `prompt_tag` | owner's tags on projects and prompts | tag names follow the slug rule                                                                                                                                                     |
+| `invite`                           | single-use invites (Phase 2)         | only a hash of the code                                                                                                                                                            |
+| `plan_limit`                       | limits per plan                      | seeded: FREE 25 projects / 250 prompts, PRO unlimited; enforced from v3                                                                                                            |
 
 ## Rules
 

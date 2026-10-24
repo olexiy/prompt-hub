@@ -380,6 +380,47 @@ body {
   margin: 0;
 }
 
+/* Prompt page: Meta box (#52). Values keep their line breaks and wrap long words. */
+.ph-meta {
+  margin: 0;
+}
+.ph-meta > div {
+  display: grid;
+  grid-template-columns: minmax(80px, 35%) minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--borderColor-muted);
+}
+.ph-meta > div:first-child {
+  border-top: 0;
+}
+.ph-meta dt {
+  color: var(--fgColor-muted);
+  overflow-wrap: anywhere;
+}
+.ph-meta dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ph-meta-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.ph-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Prompt page */
 .ph-prompt {
   display: grid;

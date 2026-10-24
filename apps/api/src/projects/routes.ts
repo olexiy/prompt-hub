@@ -217,6 +217,7 @@ async function promptAt(db: Db, projectId: string, folderId: string | null, slug
       id: prompt.id,
       slug: prompt.slug,
       title: prompt.title,
+      meta: prompt.meta,
       updatedAt: prompt.updatedAt,
       versionId: promptVersion.id,
       number: promptVersion.number,
@@ -243,6 +244,7 @@ function toPromptDetail(
     title: row.title,
     updatedAt: row.updatedAt.toISOString(),
     versionCount: row.versionCount,
+    meta: row.meta,
     version: {
       number: row.number,
       body: row.body,
@@ -480,6 +482,14 @@ export const projectRoutes = new Hono<AppEnv>()
     if (item.kind === "prompt" && change.title !== undefined) {
       await db.update(prompt).set({ title: change.title }).where(eq(prompt.id, item.row.id));
       return c.json(toPromptDetail({ ...item.row, title: change.title }, item.parentPath));
+    }
+    if (item.kind === "prompt" && change.meta !== undefined) {
+      // Replaces the whole map; values are stored as plain text and returned as such.
+      await db
+        .update(prompt)
+        .set({ meta: change.meta, updatedAt: new Date() })
+        .where(eq(prompt.id, item.row.id));
+      return c.json(toPromptDetail({ ...item.row, meta: change.meta }, item.parentPath));
     }
     if (item.kind === "prompt" && change.slug !== undefined) {
       if (await slugUsedByFolder(db, proj.id, item.parentId, change.slug)) return nameTaken(c);
