@@ -32,6 +32,7 @@ describe("stale-client check (#73)", () => {
     expect(res.headers.get(BUILD_HEADER)).toBe("b2");
     expect(await res.json()).toEqual({
       error: "A new version of the app is available. Reload the page.",
+      code: "staleClient",
     });
   });
 

@@ -4,6 +4,7 @@
  */
 
 export * from "./diff";
+export * from "./errors";
 export * from "./id";
 export * from "./meta";
 export * from "./prefs";

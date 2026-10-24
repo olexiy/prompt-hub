@@ -3,6 +3,7 @@
  * Counters are per Cloudflare location and approximate — a brake on brute force and abuse,
  * not an exact quota.
  */
+import { errorBody } from "@prompt-hub/core";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "../app-env";
 
@@ -27,7 +28,7 @@ export function rateLimit(limiter: Limiter, scope?: string) {
     const { success } = await c.env[limiter].limit({ key: scope ? `${scope}:${ip}` : ip });
     if (!success) {
       c.header("Retry-After", "60");
-      return c.json({ error: "Too many requests. Try again in a minute." }, 429);
+      return c.json(errorBody("tooManyRequests"), 429);
     }
     await next();
   });

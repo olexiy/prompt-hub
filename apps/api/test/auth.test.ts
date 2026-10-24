@@ -58,7 +58,10 @@ describe("sign-in", () => {
     const { email } = inject("testUser");
     const res = await post("/api/auth/sign-in", { email, password: "wrong-password" });
     expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: "Email or password is wrong" });
+    expect(await res.json()).toEqual({
+      error: "Email or password is wrong",
+      code: "badCredentials",
+    });
     expect(res.headers.getSetCookie()).toEqual([]);
   });
 

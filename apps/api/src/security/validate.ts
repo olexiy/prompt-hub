@@ -2,6 +2,7 @@
  * Input validation for every route: request bodies are size-limited and parsed with a Zod schema.
  * Failures become a 400 with a message chosen by the route, never Zod's internal details.
  */
+import { errorBody, type ApiErrorCode } from "@prompt-hub/core";
 import type { Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { createMiddleware } from "hono/factory";
@@ -14,7 +15,7 @@ export const MAX_BODY_BYTES = 256 * 1024;
 /** A whole project imported from a zip (#57) arrives as one JSON bundle. */
 export const MAX_IMPORT_BYTES = 8 * 1024 * 1024;
 
-const tooLarge = (c: Context) => c.json({ error: "Request body is too large" }, 413);
+const tooLarge = (c: Context) => c.json(errorBody("tooLarge"), 413);
 const limitDefault = bodyLimit({ maxSize: MAX_BODY_BYTES, onError: tooLarge });
 const limitImport = bodyLimit({ maxSize: MAX_IMPORT_BYTES, onError: tooLarge });
 
@@ -37,15 +38,15 @@ function hasNul(value: unknown): boolean {
   return false;
 }
 
-/** Parses the JSON body against `schema`; throws a 400 ApiError with `message` when it does not fit. */
+/** Parses the JSON body against `schema`; throws a 400 ApiError with `code` when it does not fit. */
 export async function parseJson<S extends z.ZodType>(
   c: Context,
   schema: S,
-  message = "Invalid request",
+  code: ApiErrorCode = "invalidRequest",
 ): Promise<z.infer<S>> {
   const raw: unknown = await c.req.json().catch(() => undefined);
-  if (hasNul(raw)) throw new ApiError(400, { message });
+  if (hasNul(raw)) throw new ApiError(400, code);
   const result = schema.safeParse(raw);
-  if (!result.success) throw new ApiError(400, { message });
+  if (!result.success) throw new ApiError(400, code);
   return result.data;
 }

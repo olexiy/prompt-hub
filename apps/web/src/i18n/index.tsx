@@ -2,7 +2,7 @@
  * Minimal i18n: three typed catalogs and a context. No library — the app has a few hundred
  * strings at most, and TypeScript guarantees every key exists in every language.
  */
-import type { Locale } from "@prompt-hub/core";
+import { isApiErrorCode, type Locale } from "@prompt-hub/core";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { de } from "./de";
 import { en, type MessageKey, type Messages } from "./en";
@@ -30,7 +30,20 @@ const I18nContext = createContext<{ locale: Locale; t: Translate }>({
   t: translator("en"),
 });
 
+/** The language API error messages are shown in; set by the provider (#36). */
+let apiErrorLocale: Locale = "en";
+
+function setApiErrorLocale(locale: Locale) {
+  apiErrorLocale = locale;
+}
+
+/** An API error in the current language: its code's translation, else the API's English text. */
+export function apiErrorMessage(code: unknown, fallback: string): string {
+  return isApiErrorCode(code) ? translator(apiErrorLocale)(`apiError.${code}`) : fallback;
+}
+
 export function I18nProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
+  setApiErrorLocale(locale);
   const value = useMemo(() => ({ locale, t: translator(locale) }), [locale]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

@@ -1,11 +1,14 @@
 /** Minimal JSON client for our own API; the session travels in HttpOnly cookies automatically. */
 import type { Locale, Theme } from "@prompt-hub/core";
 import { buildHeaders, isStale, noteBuild } from "./build";
+import { apiErrorMessage } from "./i18n";
 
+/** A failed API call; `message` is already in the user's language when the code is known (#36). */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -13,8 +16,15 @@ export class ApiError extends Error {
 
 async function handle<T>(res: Response): Promise<T> {
   noteBuild(res);
-  const body = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new ApiError(res.status, body.error ?? "Something went wrong");
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string; code?: string };
+  if (!res.ok) {
+    const code = body.code ?? "generic";
+    throw new ApiError(
+      res.status,
+      apiErrorMessage(code, body.error ?? "Something went wrong"),
+      code,
+    );
+  }
   return body;
 }
 
@@ -46,7 +56,13 @@ export async function del(path: string): Promise<void> {
 
 /** An old tab sends no writes: what it would send may not match the new API (#73). */
 function refuseIfStale() {
-  if (isStale()) throw new ApiError(409, "A new version of the app is available. Reload the page.");
+  if (isStale()) {
+    throw new ApiError(
+      409,
+      apiErrorMessage("staleClient", "A new version is available"),
+      "staleClient",
+    );
+  }
 }
 
 async function send<T>(method: string, path: string, body: unknown): Promise<T> {

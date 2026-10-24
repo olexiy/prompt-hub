@@ -44,7 +44,7 @@ describe("input validation", () => {
     expect(res.status).toBe(400);
     const body: { error: string; requestId: string } = await res.json();
     expect(body.error).toBe("Enter an email and a password");
-    expect(Object.keys(body).sort()).toEqual(["error", "requestId"]);
+    expect(Object.keys(body).sort()).toEqual(["code", "error", "requestId"]);
   });
 
   it("malformed JSON returns the same 400", async () => {
@@ -57,7 +57,7 @@ describe("input validation", () => {
     const big = JSON.stringify({ email: "a@example.test", password: "x".repeat(MAX_BODY_BYTES) });
     const res = await post("/api/auth/sign-in", big);
     expect(res.status).toBe(413);
-    expect(await res.json()).toEqual({ error: "Request body is too large" });
+    expect(await res.json()).toEqual({ error: "Request body is too large", code: "tooLarge" });
   });
 });
 
@@ -74,7 +74,10 @@ describe("rate limiting", () => {
 
     const limited = await post("/api/auth/reset", JSON.stringify({ email: "bad" }), ip);
     expect(limited.headers.get("retry-after")).toBe("60");
-    expect(await limited.json()).toEqual({ error: "Too many requests. Try again in a minute." });
+    expect(await limited.json()).toEqual({
+      error: "Too many requests. Try again in a minute.",
+      code: "tooManyRequests",
+    });
   });
 
   it("limits each client IP separately", async () => {
@@ -99,7 +102,11 @@ describe("error handling", () => {
     const res = await app.request("/boom", { headers: { "cf-ray": "ray-1" } });
     expect(res.status).toBe(500);
     const text = await res.text();
-    expect(JSON.parse(text)).toEqual({ error: "Something went wrong", requestId: "ray-1" });
+    expect(JSON.parse(text)).toEqual({
+      error: "Something went wrong",
+      code: "generic",
+      requestId: "ray-1",
+    });
     expect(text).not.toMatch(/hunter2|stack|at /);
 
     const logged = JSON.parse(String(spy.mock.calls[0]?.[0])) as Record<string, string>;

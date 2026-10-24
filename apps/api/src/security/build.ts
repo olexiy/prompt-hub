@@ -5,6 +5,7 @@
  * Writes from such a tab (it sends its own id in `X-App-Build`) are refused with 409, so an old
  * client can never submit a form to an API it no longer matches.
  */
+import { errorBody } from "@prompt-hub/core";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "../app-env";
 
@@ -36,7 +37,7 @@ export const buildCheck = (source: BuildSource = assetBuild) =>
     const client = c.req.header(BUILD_HEADER);
     if (build && client && client !== build && !SAFE_METHODS.has(c.req.method)) {
       c.header(BUILD_HEADER, build);
-      return c.json({ error: "A new version of the app is available. Reload the page." }, 409);
+      return c.json(errorBody("staleClient"), 409);
     }
     await next();
     if (build) c.res.headers.set(BUILD_HEADER, build);
