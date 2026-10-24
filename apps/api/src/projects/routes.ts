@@ -98,7 +98,8 @@ const promptTags = sql<
   string[]
 >`(select coalesce(jsonb_agg("tag"."name" order by "tag"."name"), '[]'::jsonb) from "prompt_tag" join "tag" on "tag"."id" = "prompt_tag"."tag_id" where "prompt_tag"."prompt_id" = "prompt"."id")`;
 
-const summaryColumns = {
+/** Project summary columns; shared with the search route. */
+export const summaryColumns = {
   id: project.id,
   slug: project.slug,
   name: project.name,
@@ -122,7 +123,7 @@ type ProjectRow = {
   updatedAt: Date;
 };
 
-function toSummary(row: Omit<ProjectRow, "id">): ProjectSummary {
+export function toSummary(row: Omit<ProjectRow, "id">): ProjectSummary {
   return {
     slug: row.slug,
     name: row.name,

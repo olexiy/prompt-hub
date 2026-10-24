@@ -7,6 +7,7 @@ describe("parseRoute", () => {
     ["", { name: "home" }],
     ["/settings", { name: "settings" }],
     ["/settings/", { name: "settings" }],
+    ["/search", { name: "search" }],
     ["/auth/callback", { name: "resetCallback" }],
     ["/olexiy", { name: "user", handle: "olexiy" }],
     ["/olexiy/comfy-h3", { name: "project", handle: "olexiy", project: "comfy-h3" }],

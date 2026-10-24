@@ -20,8 +20,16 @@ export function usePathname(): string {
   return useSyncExternalStore(subscribe, () => window.location.pathname);
 }
 
+/** A query parameter of the current URL, e.g. `q` on `/search?q=` (#55); "" when missing. */
+export function useQueryParam(name: string): string {
+  return useSyncExternalStore(
+    subscribe,
+    () => new URLSearchParams(window.location.search).get(name) ?? "",
+  );
+}
+
 export function navigate(to: string): void {
-  if (to === window.location.pathname) return;
+  if (to === window.location.pathname + window.location.search) return;
   window.history.pushState(null, "", to);
   window.dispatchEvent(new Event(NAVIGATE_EVENT));
   window.scrollTo(0, 0);
