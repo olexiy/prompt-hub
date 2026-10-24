@@ -2,6 +2,10 @@
 
 Newest first. Format: date — decision. _Why._ Alternatives considered.
 
+## 2026-10-24 — Slug changes are not redirected; project delete confirmed by typing its name (#51)
+
+A new project or prompt slug moves the item; old URLs answer 404 like any missing page. The settings form says so before saving ("Old links to this project stop working"). Project delete is final and cascades (feature 15); the web app enables the button only after the exact project name is typed, the API itself needs no extra confirmation field. Duplicating a prompt copies its current version as v1 of a new prompt in the same folder (meta and type too), with the version label "Copied from <slug> v<n>". _Why:_ projects are private until #53 and links are mostly the owner's own bookmarks; a redirect table costs a schema change, lookups on every miss and rules for chains and reused slugs. A 404 never leaks whether a slug existed. Alternatives: GitHub-style redirects from old slugs (revisit with public projects, v2), typing `owner/slug` instead of the name (the name is what the user sees), copying the whole history on duplicate (the copy is meant as a fresh variant).
+
 ## 2026-10-24 — Stale tabs: build id from the deployed assets, writes refused (#73)
 
 Each web build writes a random id to `dist/build.json` and into the bundle; the Worker reads the file through its `ASSETS` binding (once per isolate) and sends it as `X-App-Build`. The client shows a reload banner on a mismatch and stops sending writes; the API refuses writes whose `X-App-Build` differs with 409. _Why:_ Worker and assets deploy as one version, so the id can never disagree with what is served, and no build step has to pass the id between the web and API packages; refusing writes on the server also covers a tab whose first request after a deploy is the write itself. Alternatives: polling `/build.json` from the client (no protection for the first write), a git SHA as id (equal for staging and production builds of one commit, and for local rebuilds), a service worker (more moving parts than the problem needs).

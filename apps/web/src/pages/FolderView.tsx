@@ -1,15 +1,17 @@
 import type { FolderListing } from "@prompt-hub/core";
-import { FileDirectoryFillIcon, FileIcon, PlusIcon } from "@primer/octicons-react";
-import { Button, Heading, Label, TextInput, useConfirm } from "@primer/react";
+import { FileDirectoryFillIcon, FileIcon, GearIcon, PlusIcon } from "@primer/octicons-react";
+import { Banner, Button, Heading, Label, TextInput, useConfirm } from "@primer/react";
 import { useState } from "react";
 import { ApiError, del, patch } from "../api";
 import { useI18n } from "../i18n";
 import { navigate, RouterLink } from "../router";
 import { CreateForm } from "./CreateForm";
+import { ProjectSettings } from "./ProjectSettings";
 
 /**
  * A project root (`path: []`, mockup: project) or a folder: subfolders, prompts, "New folder",
- * "New prompt"; a folder can be renamed or deleted. The About box shows on the root only.
+ * "New prompt"; a folder can be renamed or deleted. The About box and the project Settings
+ * (#51) show on the root only.
  */
 export function FolderView({
   listing,
@@ -22,6 +24,7 @@ export function FolderView({
   const confirm = useConfirm();
   const [creating, setCreating] = useState<"folder" | "prompt" | null>(null);
   const [renaming, setRenaming] = useState(false);
+  const [settings, setSettings] = useState(false);
   const [newName, setNewName] = useState(listing.name);
   const [error, setError] = useState<string | null>(null);
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
@@ -58,117 +61,150 @@ export function FolderView({
   return (
     <div className={isRoot ? "ph-proj" : "ph-stack"}>
       <div className="ph-main-col ph-stack">
-        <div className="ph-toolbar">
-          {renaming ? (
-            <form
-              className="ph-row ph-grow"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void rename();
-              }}
-            >
-              <TextInput
-                className="ph-grow"
-                aria-label={t("form.name")}
-                value={newName}
-                maxLength={100}
-                onChange={(e) => {
-                  setNewName(e.target.value);
-                }}
-              />
-              <Button type="submit" variant="primary">
-                {t("folder.save")}
-              </Button>
-              <Button
-                onClick={() => {
-                  setRenaming(false);
-                }}
-              >
-                {t("item.cancel")}
-              </Button>
-            </form>
-          ) : (
-            <Heading as="h1" className="ph-h2 ph-grow">
-              {isRoot ? t("project.prompts") : listing.name}
-            </Heading>
-          )}
-          {!isRoot && !renaming && (
-            <>
-              <Button
-                size="small"
-                onClick={() => {
-                  setRenaming(true);
-                }}
-              >
-                {t("folder.rename")}
-              </Button>
-              <Button size="small" variant="danger" onClick={() => void remove()}>
-                {t("folder.delete")}
-              </Button>
-            </>
-          )}
-        </div>
-        {error && <p className="ph-warn">{error}</p>}
-        <div className="ph-toolbar">
-          <span className="ph-grow" />
-          <Button
-            leadingVisual={FileDirectoryFillIcon}
-            onClick={() => {
-              setCreating("folder");
-            }}
-          >
-            {t("folder.new")}
-          </Button>
-          <Button
-            variant="primary"
-            leadingVisual={PlusIcon}
-            onClick={() => {
-              setCreating("prompt");
-            }}
-          >
-            {t("project.newPrompt")}
-          </Button>
-        </div>
-        {creating && (
-          <CreateForm
-            key={creating}
-            kind={creating}
-            action={`${api}/${creating === "folder" ? "folders" : "prompts"}`}
-            extra={creating === "folder" ? { parent: path } : { folder: path }}
-            urlPrefix={`${window.location.host}${here}`}
-            onCreated={(slug) => {
-              navigate(`${here}/${slug}`);
-            }}
-            onCancel={() => {
-              setCreating(null);
-            }}
+        {isRoot && project.archived && (
+          <Banner
+            variant="info"
+            title={t("project.archived")}
+            hideTitle
+            description={t("project.archivedNote")}
+            layout="compact"
           />
         )}
-        <div className="ph-box">
-          {listing.folders.length === 0 && listing.prompts.length === 0 && (
-            <p className="ph-muted ph-pad">{isRoot ? t("project.empty") : t("folder.empty")}</p>
-          )}
-          {listing.folders.map((f) => (
-            <div className="ph-box-row" key={`f-${f.slug}`}>
-              <span className="ph-file ph-folder-icon">
-                <FileDirectoryFillIcon />
-                <RouterLink href={`${here}/${f.slug}`}>{f.name}</RouterLink>
-              </span>
-              <span className="ph-muted ph-mono ph-hide-sm">{f.slug}/</span>
-              <span />
+        {settings ? (
+          <ProjectSettings
+            owner={owner}
+            project={project}
+            onChanged={onChanged}
+            onClose={() => {
+              setSettings(false);
+            }}
+          />
+        ) : (
+          <>
+            <div className="ph-toolbar">
+              {renaming ? (
+                <form
+                  className="ph-row ph-grow"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void rename();
+                  }}
+                >
+                  <TextInput
+                    className="ph-grow"
+                    aria-label={t("form.name")}
+                    value={newName}
+                    maxLength={100}
+                    onChange={(e) => {
+                      setNewName(e.target.value);
+                    }}
+                  />
+                  <Button type="submit" variant="primary">
+                    {t("folder.save")}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setRenaming(false);
+                    }}
+                  >
+                    {t("item.cancel")}
+                  </Button>
+                </form>
+              ) : (
+                <Heading as="h1" className="ph-h2 ph-grow">
+                  {isRoot ? t("project.prompts") : listing.name}
+                </Heading>
+              )}
+              {isRoot && (
+                <Button
+                  size="small"
+                  leadingVisual={GearIcon}
+                  onClick={() => {
+                    setSettings(true);
+                  }}
+                >
+                  {t("project.settings")}
+                </Button>
+              )}
+              {!isRoot && !renaming && (
+                <>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setRenaming(true);
+                    }}
+                  >
+                    {t("folder.rename")}
+                  </Button>
+                  <Button size="small" variant="danger" onClick={() => void remove()}>
+                    {t("folder.delete")}
+                  </Button>
+                </>
+              )}
             </div>
-          ))}
-          {listing.prompts.map((q) => (
-            <div className="ph-box-row" key={`p-${q.slug}`}>
-              <span className="ph-file">
-                <FileIcon />
-                <RouterLink href={`${here}/${q.slug}`}>{q.title}</RouterLink>
-              </span>
-              <span className="ph-muted ph-mono ph-hide-sm">{q.slug}</span>
-              <span className="ph-muted">{date.format(new Date(q.updatedAt))}</span>
+            {error && <p className="ph-warn">{error}</p>}
+            <div className="ph-toolbar">
+              <span className="ph-grow" />
+              <Button
+                leadingVisual={FileDirectoryFillIcon}
+                onClick={() => {
+                  setCreating("folder");
+                }}
+              >
+                {t("folder.new")}
+              </Button>
+              <Button
+                variant="primary"
+                leadingVisual={PlusIcon}
+                onClick={() => {
+                  setCreating("prompt");
+                }}
+              >
+                {t("project.newPrompt")}
+              </Button>
             </div>
-          ))}
-        </div>
+            {creating && (
+              <CreateForm
+                key={creating}
+                kind={creating}
+                action={`${api}/${creating === "folder" ? "folders" : "prompts"}`}
+                extra={creating === "folder" ? { parent: path } : { folder: path }}
+                urlPrefix={`${window.location.host}${here}`}
+                onCreated={(slug) => {
+                  navigate(`${here}/${slug}`);
+                }}
+                onCancel={() => {
+                  setCreating(null);
+                }}
+              />
+            )}
+            <div className="ph-box">
+              {listing.folders.length === 0 && listing.prompts.length === 0 && (
+                <p className="ph-muted ph-pad">{isRoot ? t("project.empty") : t("folder.empty")}</p>
+              )}
+              {listing.folders.map((f) => (
+                <div className="ph-box-row" key={`f-${f.slug}`}>
+                  <span className="ph-file ph-folder-icon">
+                    <FileDirectoryFillIcon />
+                    <RouterLink href={`${here}/${f.slug}`}>{f.name}</RouterLink>
+                  </span>
+                  <span className="ph-muted ph-mono ph-hide-sm">{f.slug}/</span>
+                  <span />
+                </div>
+              ))}
+              {listing.prompts.map((q) => (
+                <div className="ph-box-row" key={`p-${q.slug}`}>
+                  <span className="ph-file">
+                    <FileIcon />
+                    <RouterLink href={`${here}/${q.slug}`}>{q.title}</RouterLink>
+                  </span>
+                  <span className="ph-muted ph-mono ph-hide-sm">{q.slug}</span>
+                  <span className="ph-muted">{date.format(new Date(q.updatedAt))}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
       {isRoot && (
         <aside className="ph-about">
@@ -185,7 +221,8 @@ export function FolderView({
             <dd>
               <Label>
                 {project.visibility === "PUBLIC" ? t("dashboard.public") : t("dashboard.private")}
-              </Label>
+              </Label>{" "}
+              {project.archived && <Label variant="attention">{t("project.archived")}</Label>}
             </dd>
             <dt>{t("project.prompts")}</dt>
             <dd>{project.promptCount}</dd>

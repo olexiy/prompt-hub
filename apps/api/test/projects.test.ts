@@ -134,6 +134,10 @@ describe("authorisation", () => {
           ["PATCH", `${base}/path/bus-stop`, { to: [] }],
           ["DELETE", `${base}/path/bus-stop`, undefined],
           ["POST", `${base}/prompts`, { ...newPrompt, slug: "intruder" }],
+          ["PATCH", base, { name: "Taken over" }],
+          ["PATCH", base, { archived: true }],
+          ["POST", `${base}/copy/bus-stop`, { slug: "stolen", title: "Stolen" }],
+          ["DELETE", base, undefined],
         ] as const) {
           const res = await request(method, path, body, other.cookie);
           expect(res.status, `${method} ${path}`).toBe(404);
@@ -168,6 +172,9 @@ describe("authorisation", () => {
       ["GET", "/api/projects/a/b/path/c"],
       ["POST", "/api/projects/a/b/folders"],
       ["DELETE", "/api/projects/a/b/path/c"],
+      ["PATCH", "/api/projects/a/b"],
+      ["DELETE", "/api/projects/a/b"],
+      ["POST", "/api/projects/a/b/copy/c"],
     ] as const) {
       const res = await request(method, path, method === "POST" ? newProject : undefined);
       expect(res.status, `${method} ${path}`).toBe(401);

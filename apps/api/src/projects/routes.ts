@@ -7,6 +7,9 @@
  * Authorisation: every query is scoped by the signed-in owner. A `:handle` that is not the
  * signed-in user's, or a project/item they do not own, answers 404 — the same as "does not
  * exist", so nothing leaks. Public reads by other users come with #53.
+ *
+ * Lifecycle (#51): project settings (rename, new slug, description, archive), final project
+ * delete (cascades), prompt duplicate. A changed slug is not redirected: old URLs answer 404.
  */
 import {
   folderCreateSchema,
@@ -14,6 +17,8 @@ import {
   itemPatchSchema,
   MAX_ITEM_DEPTH,
   projectCreateSchema,
+  projectPatchSchema,
+  promptCopySchema,
   promptCreateSchema,
   syncDefinitions,
   versionContentSchema,
@@ -31,6 +36,7 @@ import {
   desc,
   eq,
   folder,
+  isNotNull,
   isNull,
   ne,
   project,
@@ -78,6 +84,7 @@ const summaryColumns = {
   name: project.name,
   description: project.description,
   visibility: project.visibility,
+  archivedAt: project.archivedAt,
   promptCount,
   updatedAt: project.updatedAt,
 };
@@ -88,6 +95,7 @@ type ProjectRow = {
   name: string;
   description: string;
   visibility: string;
+  archivedAt: Date | null;
   promptCount: number;
   updatedAt: Date;
 };
@@ -98,6 +106,7 @@ function toSummary(row: Omit<ProjectRow, "id">): ProjectSummary {
     name: row.name,
     description: row.description,
     visibility: row.visibility as Visibility,
+    archived: row.archivedAt !== null,
     promptCount: row.promptCount,
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -273,11 +282,18 @@ const touchProject = (db: Pick<Db, "update">, projectId: string) =>
 export const projectRoutes = new Hono<AppEnv>()
   .use("*", requireUser)
   .get("/", async (c) => {
+    // `?archived=1` lists the archived projects instead of the active ones.
+    const archived = c.req.query("archived") === "1";
     const rows = await c
       .get("db")
       .select(summaryColumns)
       .from(project)
-      .where(and(eq(project.ownerId, c.get("user").id), isNull(project.archivedAt)))
+      .where(
+        and(
+          eq(project.ownerId, c.get("user").id),
+          archived ? isNotNull(project.archivedAt) : isNull(project.archivedAt),
+        ),
+      )
       .orderBy(desc(project.updatedAt));
     return c.json({ projects: rows.map(toSummary) });
   })
@@ -302,6 +318,44 @@ export const projectRoutes = new Hono<AppEnv>()
     const proj = await ownProject(c);
     if (!proj) return notFound(c);
     return c.json(await listing(c, proj, [], { id: null, name: null }));
+  })
+  .patch("/:handle/:project", async (c) => {
+    const proj = await ownProject(c);
+    if (!proj) return notFound(c);
+    const { archived, ...fields } = await parseJson(
+      c,
+      projectPatchSchema,
+      "Check the project settings",
+    );
+    const changes = {
+      ...fields,
+      ...(archived === undefined
+        ? {}
+        : { archivedAt: archived ? (proj.archivedAt ?? new Date()) : null }),
+    };
+    try {
+      const [row] = await c
+        .get("db")
+        .update(project)
+        .set(changes)
+        .where(eq(project.id, proj.id))
+        .returning();
+      if (!row) return notFound(c);
+      return c.json(toSummary({ ...row, promptCount: proj.promptCount }));
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        return c.json({ error: "You already have a project with this URL slug" }, 409);
+      }
+      throw err;
+    }
+  })
+  .delete("/:handle/:project", async (c) => {
+    // Final (feature 15): folders, prompts, versions and tags go with it by cascade. The web app
+    // asks to type the project name first.
+    const proj = await ownProject(c);
+    if (!proj) return notFound(c);
+    await c.get("db").delete(project).where(eq(project.id, proj.id));
+    return c.body(null, 204);
   })
   .get("/:handle/:project/path/*", async (c) => {
     const proj = await ownProject(c);
@@ -454,6 +508,59 @@ export const projectRoutes = new Hono<AppEnv>()
     }
     await touchProject(db, proj.id);
     return c.body(null, 204);
+  })
+  .post("/:handle/:project/copy/*", async (c) => {
+    // Duplicate a prompt next to the original: its current version becomes v1 of the copy.
+    const proj = await ownProject(c);
+    const path = pathSegments(c, "/copy");
+    if (!proj || !path || path.length === 0) return notFound(c);
+    const input = await parseJson(c, promptCopySchema, "Check the title and URL slug");
+    const db = c.get("db");
+    const item = await resolve(c, proj, path);
+    if (item?.kind !== "prompt") return notFound(c);
+    const { parentId, parentPath, row: source } = item;
+    if (await slugUsedByFolder(db, proj.id, parentId, input.slug)) return nameTaken(c);
+    const [meta] = await db
+      .select({ meta: prompt.meta, type: prompt.type })
+      .from(prompt)
+      .where(eq(prompt.id, source.id));
+    try {
+      await db.transaction(async (tx) => {
+        const [p] = await tx
+          .insert(prompt)
+          .values({
+            projectId: proj.id,
+            folderId: parentId,
+            slug: input.slug,
+            title: input.title,
+            type: meta?.type ?? "TEXT",
+            meta: meta?.meta ?? {},
+            lastVersionNumber: 1,
+          })
+          .returning();
+        if (!p) throw new Error("prompt insert returned nothing");
+        const [v] = await tx
+          .insert(promptVersion)
+          .values({
+            promptId: p.id,
+            number: 1,
+            body: source.body,
+            variables: cleanDefs(source.variables),
+            message: `Copied from ${source.slug} v${String(source.number)}`,
+            createdBy: c.get("user").id,
+          })
+          .returning();
+        if (!v) throw new Error("version insert returned nothing");
+        await tx.update(prompt).set({ currentVersionId: v.id }).where(eq(prompt.id, p.id));
+        await touchProject(tx, proj.id);
+      });
+    } catch (err) {
+      if (isUniqueViolation(err)) return nameTaken(c);
+      throw err;
+    }
+    const row = await promptAt(db, proj.id, parentId, input.slug);
+    if (!row) throw new Error("prompt missing after copy");
+    return c.json(toPromptDetail(row, parentPath), 201);
   })
   .get("/:handle/:project/versions/*", async (c) => {
     // `?n=` reads one version; otherwise the history, newest first.

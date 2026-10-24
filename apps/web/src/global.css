@@ -228,6 +228,16 @@ body {
 .ph-title {
   margin: 0;
 }
+.ph-m0 {
+  margin: 0;
+}
+.ph-wrap {
+  flex-wrap: wrap;
+}
+/* Project settings: archive and delete sit in a red-bordered box, like GitHub's danger zone. */
+.ph-box.ph-danger {
+  border-color: var(--borderColor-danger-emphasis);
+}
 .ph-box {
   border: 1px solid var(--borderColor-default);
   border-radius: 6px;

@@ -58,6 +58,28 @@ export const de: Messages = {
   "auth.invalidLink": "Dieser Link ist ungültig oder abgelaufen. Fordere einen neuen an.",
   "auth.toSignIn": "Zur Anmeldung",
   "error.generic": "Etwas ist schiefgelaufen",
+  "settings.projectTitle": "Projekteinstellungen",
+  "settings.slugChange":
+    "Neue Adresse: {url}. Alte Links auf das Projekt funktionieren dann nicht mehr.",
+  "settings.dangerZone": "Gefahrenzone",
+  "settings.archive": "Projekt archivieren",
+  "settings.archiveHint":
+    "Blendet es in deiner Projektliste aus. Es bleibt über seine URL erreichbar und lässt sich wiederherstellen.",
+  "settings.unarchive": "Aus dem Archiv holen",
+  "settings.unarchiveHint": "Zeigt es wieder in deiner Projektliste.",
+  "settings.deleteProject": "Projekt löschen",
+  "settings.deleteHint":
+    "Löscht das Projekt mit allen Ordnern, Prompts und Versionen endgültig. Das lässt sich nicht rückgängig machen.",
+  "settings.typeName": "Zur Bestätigung {name} eingeben",
+  "project.settings": "Einstellungen",
+  "project.archived": "Archiviert",
+  "project.archivedNote": "Dieses Projekt ist archiviert und in deiner Projektliste ausgeblendet.",
+  "dashboard.showArchived": "Archiv",
+  "dashboard.noArchived": "Keine archivierten Projekte.",
+  "prompt.duplicate": "Duplizieren",
+  "prompt.duplicateTitle": "Prompt duplizieren",
+  "prompt.duplicateHint": "Die Kopie beginnt mit der aktuellen Version als v1, im selben Ordner.",
+  "prompt.copySuffix": "{title} (Kopie)",
   "stale.title": "Eine neue Version ist verfügbar",
   "stale.body":
     "Dieser Tab läuft mit einer älteren Version von Prompt Hub. Neu laden, um weiterzuarbeiten; ungespeicherter Text in offenen Formularen geht verloren.",

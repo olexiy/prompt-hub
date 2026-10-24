@@ -2,6 +2,7 @@ import { renderPrompt, tokenizePrompt, type PromptDetail } from "@prompt-hub/cor
 import {
   AlertIcon,
   CopyIcon,
+  DuplicateIcon,
   FileDirectoryIcon,
   HistoryIcon,
   PencilIcon,
@@ -22,6 +23,7 @@ import { useI18n } from "../i18n";
 import { del, patch } from "../api";
 import { navigate } from "../router";
 import { useApi } from "../useApi";
+import { DuplicatePrompt } from "./DuplicatePrompt";
 import { EditPrompt } from "./EditPrompt";
 import { History } from "./History";
 
@@ -46,7 +48,7 @@ export function PromptPage({
   const confirm = useConfirm();
   const [values, setValues] = useState<Record<string, string>>({});
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-  const [mode, setMode] = useState<"view" | "edit" | "history">("view");
+  const [mode, setMode] = useState<"view" | "edit" | "history" | "duplicate">("view");
   const api = `/api/projects/${handle}/${project}`;
   const itemPath = [...detail.folder, detail.slug].join("/");
   const apiVersions = `${api}/versions/${itemPath}`;
@@ -112,6 +114,16 @@ export function PromptPage({
         >
           {t("prompt.history")}
         </Button>
+        <Button
+          size="small"
+          leadingVisual={DuplicateIcon}
+          aria-pressed={mode === "duplicate"}
+          onClick={() => {
+            setMode(mode === "duplicate" ? "view" : "duplicate");
+          }}
+        >
+          {t("prompt.duplicate")}
+        </Button>
         <ActionMenu>
           <ActionMenu.Button size="small" leadingVisual={FileDirectoryIcon}>
             {t("prompt.move")}
@@ -150,6 +162,19 @@ export function PromptPage({
           onSaved={() => {
             setMode("view");
             onChanged();
+          }}
+          onCancel={() => {
+            setMode("view");
+          }}
+        />
+      )}
+      {mode === "duplicate" && (
+        <DuplicatePrompt
+          detail={detail}
+          apiCopy={`${api}/copy/${itemPath}`}
+          urlPrefix={[window.location.host, handle, project, ...detail.folder].join("/")}
+          onCreated={(slug) => {
+            navigate(["", handle, project, ...detail.folder, slug].join("/"));
           }}
           onCancel={() => {
             setMode("view");
