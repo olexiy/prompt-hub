@@ -1,12 +1,13 @@
-import type { ProjectSummary } from "@prompt-hub/core";
-import { ArchiveIcon, PlusIcon, RepoIcon } from "@primer/octicons-react";
+import type { ProjectBundle, ProjectSummary } from "@prompt-hub/core";
+import { ArchiveIcon, PlusIcon, RepoIcon, UploadIcon } from "@primer/octicons-react";
 import { Button, Heading, Label, Spinner, Text, TextInput } from "@primer/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import { navigate, RouterLink } from "../router";
 import { useApi } from "../useApi";
 import { TagChips, TagFilter } from "../shell/Tags";
 import { CreateForm } from "./CreateForm";
+import { ImportProject, readZipFile } from "./ImportProject";
 
 /**
  * Projects overview (mockup: dashboard): own projects, newest first, and "New project". The
@@ -19,6 +20,23 @@ export function Dashboard({ handle }: { handle: string }) {
     archived ? "/api/projects?archived=1" : "/api/projects",
   );
   const [creating, setCreating] = useState(false);
+  // A project archive read for import (#57), shown as a preview until confirmed.
+  const [archive, setArchive] = useState<{ bundle: ProjectBundle; skipped: string[] } | null>(null);
+  const [zipError, setZipError] = useState<string | null>(null);
+  const zipPicker = useRef<HTMLInputElement>(null);
+
+  async function importZip(file: File | undefined) {
+    if (!file) return;
+    const result = await readZipFile(file);
+    if ("error" in result) {
+      setArchive(null);
+      setZipError(t(result.error, { name: file.name, detail: result.detail }));
+      return;
+    }
+    setZipError(null);
+    setCreating(false);
+    setArchive(result);
+  }
   const [filter, setFilter] = useState("");
   // A clicked topic chip (#54); combines with the text filter.
   const [tag, setTag] = useState<string | null>(null);
@@ -77,10 +95,45 @@ export function Dashboard({ handle }: { handle: string }) {
           >
             {t("dashboard.showArchived")}
           </Button>
+          <input
+            ref={zipPicker}
+            type="file"
+            hidden
+            accept=".zip,application/zip"
+            aria-label={t("zip.pick")}
+            onChange={(e) => {
+              void importZip(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            leadingVisual={UploadIcon}
+            onClick={() => {
+              zipPicker.current?.click();
+            }}
+          >
+            {t("zip.import")}
+          </Button>
           <Button variant="primary" leadingVisual={PlusIcon} onClick={newProject}>
             {t("dashboard.newProject")}
           </Button>
         </div>
+        {zipError && <p className="ph-warn">{zipError}</p>}
+        {archive && (
+          <div className="ph-mt">
+            <ImportProject
+              bundle={archive.bundle}
+              skipped={archive.skipped}
+              urlPrefix={`${window.location.host}/${handle}`}
+              onCreated={(slug) => {
+                navigate(`/${handle}/${slug}`);
+              }}
+              onCancel={() => {
+                setArchive(null);
+              }}
+            />
+          </div>
+        )}
         {creating && (
           <div className="ph-mt">
             <CreateForm

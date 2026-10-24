@@ -9,6 +9,7 @@ export * from "./meta";
 export * from "./prefs";
 export * from "./promptfile";
 export * from "./projects";
+export * from "./projectzip";
 export * from "./routes";
 export * from "./search";
 export * from "./variables";

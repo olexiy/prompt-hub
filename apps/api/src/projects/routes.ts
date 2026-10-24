@@ -64,19 +64,19 @@ import { rateLimit } from "../security/rate-limit";
 import { parseJson } from "../security/validate";
 
 /** True for a Postgres unique violation anywhere in the error's cause chain (drizzle wraps it). */
-function isUniqueViolation(err: unknown): boolean {
+export function isUniqueViolation(err: unknown): boolean {
   for (let e = err; e && typeof e === "object"; e = (e as { cause?: unknown }).cause) {
     if ((e as { code?: unknown }).code === "23505") return true;
   }
   return false;
 }
 
-const notFound = (c: Context<AppEnv>) => c.json({ error: "Not found" }, 404);
+export const notFound = (c: Context<AppEnv>) => c.json({ error: "Not found" }, 404);
 const nameTaken = (c: Context<AppEnv>) =>
   c.json({ error: "This folder already has a prompt or folder with this URL slug" }, 409);
 
 /** Variable definitions without undefined keys: what we store and return (typed variables later). */
-function cleanDefs(
+export function cleanDefs(
   defs: readonly { name: string; default?: string | undefined; description?: string | undefined }[],
 ): { name: string; default?: string; description?: string }[] {
   return defs.map(({ name, default: d, description }) => ({
@@ -137,7 +137,7 @@ export function toSummary(row: Omit<ProjectRow, "id">): ProjectSummary {
 }
 
 /** The signed-in user's project named in the URL, or null (wrong handle, missing, not theirs). */
-async function ownProject(c: Context<AppEnv>): Promise<ProjectRow | null> {
+export async function ownProject(c: Context<AppEnv>): Promise<ProjectRow | null> {
   const user = c.get("user");
   if (c.req.param("handle") !== user.handle) return null;
   const [row] = await c

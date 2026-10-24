@@ -6,6 +6,7 @@ import type { AppEnv } from "./app-env";
 import { requireUser, sameOrigin } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
 import { projectRoutes, publicProjectRoutes, tagRoutes } from "./projects/routes";
+import { archiveRoutes } from "./projects/archive";
 import { searchRoutes } from "./projects/search";
 import { buildCheck } from "./security/build";
 import { handleError, handleNotFound } from "./security/errors";
@@ -31,6 +32,7 @@ app.get("/health", (c) => c.json({ status: "ok", app: APP_NAME } satisfies Healt
 
 app.route("/auth", authRoutes);
 app.route("/projects", projectRoutes);
+app.route("/projects", archiveRoutes);
 app.route("/public/projects", publicProjectRoutes);
 app.route("/tags", tagRoutes);
 app.route("/search", searchRoutes);
