@@ -7,6 +7,7 @@ export * from "./diff";
 export * from "./id";
 export * from "./meta";
 export * from "./prefs";
+export * from "./promptfile";
 export * from "./projects";
 export * from "./routes";
 export * from "./search";

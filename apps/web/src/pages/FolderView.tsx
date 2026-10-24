@@ -1,13 +1,22 @@
-import type { FolderListing } from "@prompt-hub/core";
-import { FileDirectoryFillIcon, FileIcon, GearIcon, PlusIcon } from "@primer/octicons-react";
+import type { FolderListing, PromptFile } from "@prompt-hub/core";
+import {
+  FileDirectoryFillIcon,
+  FileIcon,
+  GearIcon,
+  PlusIcon,
+  UploadIcon,
+} from "@primer/octicons-react";
 import { Banner, Button, Heading, Label, TextInput, useConfirm } from "@primer/react";
-import { useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
 import { ApiError, del, patch } from "../api";
 import { useI18n } from "../i18n";
 import { navigate, RouterLink } from "../router";
 import { TagChips, TagFilter } from "../shell/Tags";
 import { CreateForm } from "./CreateForm";
+import { ImportPrompt, readPromptFile } from "./ImportPrompt";
 import { ProjectSettings } from "./ProjectSettings";
+
+const isOwnerView = (listing: FolderListing) => listing.access === "owner";
 
 /**
  * A project root (`path: []`, mockup: project) or a folder: subfolders, prompts, "New folder",
@@ -30,6 +39,10 @@ export function FolderView({
   const [error, setError] = useState<string | null>(null);
   // Filter over this folder's items (#54): text matches titles, names and tags; a topic chip
   // narrows prompts to that tag.
+  // A file read for import (#56): picked with the button or dropped onto the page.
+  const [imported, setImported] = useState<PromptFile | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState("");
   const [tag, setTag] = useState<string | null>(null);
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
@@ -61,6 +74,43 @@ export function FolderView({
     }
   }
 
+  async function importFile(file: File | undefined) {
+    if (!file) return;
+    const result = await readPromptFile(file);
+    if ("error" in result) {
+      setImported(null);
+      setError(
+        t(result.error, {
+          name: file.name,
+          line: String(result.line ?? ""),
+        }),
+      );
+      return;
+    }
+    setError(null);
+    setCreating(null);
+    setImported(result.file);
+  }
+
+  /** Files dropped anywhere on the folder view of an owner. */
+  const dropProps = isOwnerView(listing)
+    ? {
+        onDragOver: (e: DragEvent) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          setDragging(true);
+        },
+        onDragLeave: () => {
+          setDragging(false);
+        },
+        onDrop: (e: DragEvent) => {
+          e.preventDefault();
+          setDragging(false);
+          void importFile(e.dataTransfer.files[0]);
+        },
+      }
+    : {};
+
   async function remove() {
     const ok = await confirm({
       title: t("folder.delete"),
@@ -76,7 +126,7 @@ export function FolderView({
 
   return (
     <div className={isRoot ? "ph-proj" : "ph-stack"}>
-      <div className="ph-main-col ph-stack">
+      <div className={`ph-main-col ph-stack${dragging ? " ph-dropping" : ""}`} {...dropProps}>
         {isRoot && project.archived && (
           <Banner
             variant="info"
@@ -162,6 +212,25 @@ export function FolderView({
             {isOwner && (
               <div className="ph-toolbar">
                 <span className="ph-grow" />
+                <input
+                  ref={picker}
+                  type="file"
+                  hidden
+                  accept=".md,.markdown,.txt,text/markdown,text/plain"
+                  aria-label={t("import.pick")}
+                  onChange={(e) => {
+                    void importFile(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  leadingVisual={UploadIcon}
+                  onClick={() => {
+                    picker.current?.click();
+                  }}
+                >
+                  {t("import.button")}
+                </Button>
                 <Button
                   leadingVisual={FileDirectoryFillIcon}
                   onClick={() => {
@@ -180,6 +249,20 @@ export function FolderView({
                   {t("project.newPrompt")}
                 </Button>
               </div>
+            )}
+            {imported && (
+              <ImportPrompt
+                file={imported}
+                action={`${api}/prompts`}
+                folder={path}
+                urlPrefix={`${window.location.host}${here}`}
+                onCreated={(slug) => {
+                  navigate(`${here}/${slug}`);
+                }}
+                onCancel={() => {
+                  setImported(null);
+                }}
+              />
             )}
             {creating && (
               <CreateForm

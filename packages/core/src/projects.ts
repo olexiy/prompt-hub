@@ -51,6 +51,8 @@ export const promptCreateSchema = z.strictObject({
   title: z.string().trim().min(1).max(200),
   body: z.string().max(MAX_PROMPT_BODY),
   variables: variableDefsSchema.default([]),
+  tags: tagsSchema.default([]),
+  meta: metaSchema.default({}),
 });
 export type PromptCreate = z.input<typeof promptCreateSchema>;
 

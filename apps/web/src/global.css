@@ -270,6 +270,13 @@ button.ph-topic:hover,
   border-radius: 2px;
 }
 
+/* A file dragged over a folder view (#56) */
+.ph-dropping {
+  outline: 2px dashed var(--borderColor-accent-emphasis);
+  outline-offset: 8px;
+  border-radius: 6px;
+}
+
 /* Shared boxes and lists */
 .ph-mt {
   margin-top: 16px;
