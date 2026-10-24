@@ -15,6 +15,19 @@ export const limitBody = bodyLimit({
   onError: (c) => c.json({ error: "Request body is too large" }, 413),
 });
 
+/**
+ * True when a string anywhere in the value holds a NUL character: Postgres `text` and `jsonb`
+ * cannot store it and would fail the query (a 500), so it is refused up front (#56).
+ */
+function hasNul(value: unknown): boolean {
+  if (typeof value === "string") return value.includes("\u0000");
+  if (Array.isArray(value)) return value.some(hasNul);
+  if (value && typeof value === "object") {
+    return Object.entries(value).some(([k, v]) => k.includes("\u0000") || hasNul(v));
+  }
+  return false;
+}
+
 /** Parses the JSON body against `schema`; throws a 400 ApiError with `message` when it does not fit. */
 export async function parseJson<S extends z.ZodType>(
   c: Context,
@@ -22,6 +35,7 @@ export async function parseJson<S extends z.ZodType>(
   message = "Invalid request",
 ): Promise<z.infer<S>> {
   const raw: unknown = await c.req.json().catch(() => undefined);
+  if (hasNul(raw)) throw new ApiError(400, { message });
   const result = schema.safeParse(raw);
   if (!result.success) throw new ApiError(400, { message });
   return result.data;

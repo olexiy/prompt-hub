@@ -562,6 +562,7 @@ export const projectRoutes = new Hono<AppEnv>()
             folderId: parent.id,
             slug: input.slug,
             title: input.title,
+            meta: input.meta,
             lastVersionNumber: 1,
           })
           .returning();
@@ -572,6 +573,8 @@ export const projectRoutes = new Hono<AppEnv>()
           .returning();
         if (!v) throw new Error("version insert returned nothing");
         await tx.update(prompt).set({ currentVersionId: v.id }).where(eq(prompt.id, p.id));
+        // Tags and meta can come along on create (file import #56, zip import #57).
+        if (input.tags.length > 0) await setTags(tx, userId, { prompt: p.id }, input.tags);
         await touchProject(tx, proj.id);
       });
     } catch (err) {
