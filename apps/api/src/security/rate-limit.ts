@@ -17,10 +17,14 @@ export function clientIp(headers: { header(name: string): string | undefined }):
   return headers.header("cf-connecting-ip") ?? "unknown";
 }
 
-/** 429 with Retry-After once the client IP is over the limiter's budget. */
-export function rateLimit(limiter: Limiter) {
+/**
+ * 429 with Retry-After once the client IP is over the limiter's budget. `scope` gives a route
+ * group counters of its own on the same binding (same limits, separate budget).
+ */
+export function rateLimit(limiter: Limiter, scope?: string) {
   return createMiddleware<AppEnv>(async (c, next) => {
-    const { success } = await c.env[limiter].limit({ key: clientIp(c.req) });
+    const ip = clientIp(c.req);
+    const { success } = await c.env[limiter].limit({ key: scope ? `${scope}:${ip}` : ip });
     if (!success) {
       c.header("Retry-After", "60");
       return c.json({ error: "Too many requests. Try again in a minute." }, 429);

@@ -1,4 +1,4 @@
-import type { ProjectItem } from "@prompt-hub/core";
+import type { Access, ProjectItem } from "@prompt-hub/core";
 import { Spinner } from "@primer/react";
 import { useI18n } from "../i18n";
 import { useApi } from "../useApi";
@@ -8,19 +8,22 @@ import { PromptPage } from "./PromptPage";
 
 /**
  * Everything under `/{handle}/{project}`: the API resolves the path to the project root, a folder
- * or a prompt, and this page shows the matching view.
+ * or a prompt, and this page shows the matching view. The owner reads through the full API;
+ * everyone else through the public one (#53), which answers 404 for private projects.
  */
 export function ItemPage({
+  access,
   handle,
   project,
   path,
 }: {
+  access: Access;
   handle: string;
   project: string;
   path: string[];
 }) {
   const { t } = useI18n();
-  const base = `/api/projects/${handle}/${project}`;
+  const base = `/api/${access === "owner" ? "projects" : "public/projects"}/${handle}/${project}`;
   const [loaded, reload] = useApi<ProjectItem>(
     path.length === 0 ? base : `${base}/path/${path.join("/")}`,
   );

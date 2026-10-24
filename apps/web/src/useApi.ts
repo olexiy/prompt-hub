@@ -6,10 +6,10 @@ export type Loaded<T> =
 
 /**
  * GET `path` whenever it changes (or `reload()` is called); 404 is its own state so pages can
- * show "not found".
+ * show "not found". A null path loads nothing and stays "loading".
  */
-export function useApi<T>(path: string): [Loaded<T>, () => void] {
-  const [result, setResult] = useState<{ path: string; value: Loaded<T> }>({
+export function useApi<T>(path: string | null): [Loaded<T>, () => void] {
+  const [result, setResult] = useState<{ path: string | null; value: Loaded<T> }>({
     path,
     value: { state: "loading" },
   });
@@ -19,6 +19,7 @@ export function useApi<T>(path: string): [Loaded<T>, () => void] {
   }, []);
 
   useEffect(() => {
+    if (path === null) return;
     let current = true;
     get<T>(path).then(
       (data) => {

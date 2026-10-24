@@ -1,6 +1,6 @@
 import { routePath, type Route, type Theme } from "@prompt-hub/core";
 import { DeviceDesktopIcon, MoonIcon, SearchIcon, SunIcon } from "@primer/octicons-react";
-import { ActionList, ActionMenu, IconButton, TextInput } from "@primer/react";
+import { ActionList, ActionMenu, Button, IconButton, TextInput } from "@primer/react";
 import { Fragment } from "react";
 import type { Me } from "../api";
 import { useI18n } from "../i18n";
@@ -104,6 +104,38 @@ export function Header({
             </ActionList>
           </ActionMenu.Overlay>
         </ActionMenu>
+      </div>
+    </header>
+  );
+}
+
+/**
+ * Header for a signed-out visitor of a public project (#53): logo, breadcrumb and "Sign in"
+ * (the sign-in page is the app root while signed out).
+ */
+export function VisitorHeader({ route }: { route: Route }) {
+  const { t } = useI18n();
+  return (
+    <header className="ph-header">
+      <div className="ph-header-inner">
+        <RouterLink href="/" className="ph-logo" aria-label={t("header.home")} muted>
+          <span className="ph-logo-mark" aria-hidden="true">
+            {"{ }"}
+          </span>
+          <span className="ph-logo-text">Prompt Hub</span>
+        </RouterLink>
+        <Breadcrumb route={route} />
+        <span className="ph-grow" />
+        <Button
+          as="a"
+          href="/"
+          size="small"
+          onClick={(e: React.MouseEvent<HTMLElement>) => {
+            handleLinkClick(e, "/");
+          }}
+        >
+          {t("auth.signIn")}
+        </Button>
       </div>
     </header>
   );

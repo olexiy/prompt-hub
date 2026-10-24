@@ -59,6 +59,11 @@ export const en = {
   "auth.invalidLink": "This link is invalid or has expired. Request a new one.",
   "auth.toSignIn": "Back to sign in",
   "error.generic": "Something went wrong",
+  "settings.makePublic": "Make public",
+  "settings.makePublicHint":
+    "Anyone with the link can read the live version of every prompt and copy it, also without an account. History and notes stay private.",
+  "settings.makePrivate": "Make private",
+  "settings.makePrivateHint": "Only you can see this project again. Shared links stop working.",
   "meta.title": "Meta",
   "meta.edit": "Edit meta fields",
   "meta.empty": "No meta fields yet.",

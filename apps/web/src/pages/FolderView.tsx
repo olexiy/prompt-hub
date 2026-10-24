@@ -34,6 +34,7 @@ export function FolderView({
   const here = [projectUrl, ...path].join("/");
   const api = `/api/projects/${owner}/${project.slug}`;
   const isRoot = path.length === 0;
+  const isOwner = listing.access === "owner";
 
   async function rename() {
     try {
@@ -115,7 +116,7 @@ export function FolderView({
                   {isRoot ? t("project.prompts") : listing.name}
                 </Heading>
               )}
-              {isRoot && (
+              {isRoot && isOwner && (
                 <Button
                   size="small"
                   leadingVisual={GearIcon}
@@ -126,7 +127,7 @@ export function FolderView({
                   {t("project.settings")}
                 </Button>
               )}
-              {!isRoot && !renaming && (
+              {!isRoot && !renaming && isOwner && (
                 <>
                   <Button
                     size="small"
@@ -143,26 +144,28 @@ export function FolderView({
               )}
             </div>
             {error && <p className="ph-warn">{error}</p>}
-            <div className="ph-toolbar">
-              <span className="ph-grow" />
-              <Button
-                leadingVisual={FileDirectoryFillIcon}
-                onClick={() => {
-                  setCreating("folder");
-                }}
-              >
-                {t("folder.new")}
-              </Button>
-              <Button
-                variant="primary"
-                leadingVisual={PlusIcon}
-                onClick={() => {
-                  setCreating("prompt");
-                }}
-              >
-                {t("project.newPrompt")}
-              </Button>
-            </div>
+            {isOwner && (
+              <div className="ph-toolbar">
+                <span className="ph-grow" />
+                <Button
+                  leadingVisual={FileDirectoryFillIcon}
+                  onClick={() => {
+                    setCreating("folder");
+                  }}
+                >
+                  {t("folder.new")}
+                </Button>
+                <Button
+                  variant="primary"
+                  leadingVisual={PlusIcon}
+                  onClick={() => {
+                    setCreating("prompt");
+                  }}
+                >
+                  {t("project.newPrompt")}
+                </Button>
+              </div>
+            )}
             {creating && (
               <CreateForm
                 key={creating}

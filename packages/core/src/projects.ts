@@ -30,6 +30,7 @@ export const projectPatchSchema = z
     name: z.string().trim().min(1).max(100),
     description: z.string().trim().max(1000),
     archived: z.boolean(),
+    visibility: z.enum(["PRIVATE", "PUBLIC"]),
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, "Nothing to change");
@@ -76,6 +77,12 @@ export const promptCopySchema = z.strictObject({
 export type PromptCopy = z.input<typeof promptCopySchema>;
 
 export type Visibility = "PRIVATE" | "PUBLIC";
+
+/**
+ * Who the answer is for (#53): the owner gets everything; a public read gets the live version
+ * only (no version number, message, count or history) and meta without `note`.
+ */
+export type Access = "owner" | "public";
 
 export interface ProjectSummary {
   slug: string;
@@ -131,6 +138,7 @@ export interface FolderSummary {
 /** A project root (`path: []`) or a folder, with what is directly inside it. */
 export interface FolderListing {
   kind: "folder";
+  access: Access;
   project: ProjectSummary;
   owner: string;
   path: string[];
@@ -142,6 +150,7 @@ export interface FolderListing {
 
 export interface PromptDetail extends PromptSummary {
   kind: "prompt";
+  access: Access;
   /** Folder path of the prompt; [] at the project root. */
   folder: string[];
   /** Number of stored versions (history size). */
