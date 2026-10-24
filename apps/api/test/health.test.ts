@@ -12,6 +12,6 @@ describe("API routing", () => {
   it("unknown /api routes return a JSON 404, not the SPA", async () => {
     const res = await exports.default.fetch("http://localhost/api/does-not-exist");
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: "Not found" });
+    expect(await res.json()).toEqual({ error: "Not found", code: "notFound" });
   });
 });

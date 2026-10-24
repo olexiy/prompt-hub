@@ -7,11 +7,12 @@
  * batched inserts.
  */
 import {
+  errorBody,
+  type ProjectBundle,
   projectBundleSchema,
   projectZipStream,
   syncDefinitions,
   uuidv7,
-  type ProjectBundle,
 } from "@prompt-hub/core";
 import {
   asc,
@@ -190,12 +191,12 @@ export const archiveRoutes = new Hono<AppEnv>()
     });
   })
   .post("/import", async (c) => {
-    const bundle = await parseJson(c, projectBundleSchema, "Check the archive contents");
+    const bundle = await parseJson(c, projectBundleSchema, "checkArchive");
     try {
       await c.get("db").transaction((tx) => createFromBundle(tx, c.get("user").id, bundle));
     } catch (err) {
       if (isUniqueViolation(err)) {
-        return c.json({ error: "You already have a project with this URL slug" }, 409);
+        return c.json(errorBody("projectSlugTaken"), 409);
       }
       throw err;
     }

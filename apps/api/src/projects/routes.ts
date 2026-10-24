@@ -16,21 +16,22 @@
  * delete (cascades), prompt duplicate. A changed slug is not redirected: old URLs answer 404.
  */
 import {
+  type Access,
+  errorBody,
   folderCreateSchema,
+  type FolderListing,
   isValidSlug,
   itemPatchSchema,
   MAX_ITEM_DEPTH,
   projectCreateSchema,
   projectPatchSchema,
+  type ProjectSummary,
   promptCopySchema,
   promptCreateSchema,
+  type PromptDetail,
   syncDefinitions,
   versionContentSchema,
   versionCreateSchema,
-  type Access,
-  type FolderListing,
-  type ProjectSummary,
-  type PromptDetail,
   type VersionDetail,
   type VersionSummary,
   type Visibility,
@@ -71,9 +72,8 @@ export function isUniqueViolation(err: unknown): boolean {
   return false;
 }
 
-export const notFound = (c: Context<AppEnv>) => c.json({ error: "Not found" }, 404);
-const nameTaken = (c: Context<AppEnv>) =>
-  c.json({ error: "This folder already has a prompt or folder with this URL slug" }, 409);
+export const notFound = (c: Context<AppEnv>) => c.json(errorBody("notFound"), 404);
+const nameTaken = (c: Context<AppEnv>) => c.json(errorBody("itemSlugTaken"), 409);
 
 /** Variable definitions without undefined keys: what we store and return (typed variables later). */
 export function cleanDefs(
@@ -425,7 +425,7 @@ export const projectRoutes = new Hono<AppEnv>()
     return c.json({ projects: rows.map(toSummary) });
   })
   .post("/", async (c) => {
-    const input = await parseJson(c, projectCreateSchema, "Check the project name and URL slug");
+    const input = await parseJson(c, projectCreateSchema, "checkProject");
     try {
       const [row] = await c
         .get("db")
@@ -436,7 +436,7 @@ export const projectRoutes = new Hono<AppEnv>()
       return c.json(toSummary({ ...row, tags: [], promptCount: 0 }), 201);
     } catch (err) {
       if (isUniqueViolation(err)) {
-        return c.json({ error: "You already have a project with this URL slug" }, 409);
+        return c.json(errorBody("projectSlugTaken"), 409);
       }
       throw err;
     }
@@ -452,7 +452,7 @@ export const projectRoutes = new Hono<AppEnv>()
     const { archived, tags, ...fields } = await parseJson(
       c,
       projectPatchSchema,
-      "Check the project settings",
+      "checkProjectSettings",
     );
     const changes = {
       ...fields,
@@ -473,7 +473,7 @@ export const projectRoutes = new Hono<AppEnv>()
       return c.json(toSummary({ ...row, tags: tags ?? proj.tags, promptCount: proj.promptCount }));
     } catch (err) {
       if (isUniqueViolation(err)) {
-        return c.json({ error: "You already have a project with this URL slug" }, 409);
+        return c.json(errorBody("projectSlugTaken"), 409);
       }
       throw err;
     }
@@ -521,12 +521,12 @@ export const projectRoutes = new Hono<AppEnv>()
   .post("/:handle/:project/folders", async (c) => {
     const proj = await ownProject(c);
     if (!proj) return notFound(c);
-    const input = await parseJson(c, folderCreateSchema, "Check the folder name and URL slug");
+    const input = await parseJson(c, folderCreateSchema, "checkFolder");
     const db = c.get("db");
     const parent = await findFolder(db, proj.id, input.parent);
     if (!parent) return notFound(c);
     if (input.parent.length + 1 >= MAX_ITEM_DEPTH) {
-      return c.json({ error: "Folders cannot be nested deeper" }, 400);
+      return c.json(errorBody("tooDeep"), 400);
     }
     if (await slugUsedByPrompt(db, proj.id, parent.id, input.slug)) return nameTaken(c);
     try {
@@ -546,7 +546,7 @@ export const projectRoutes = new Hono<AppEnv>()
   .post("/:handle/:project/prompts", async (c) => {
     const proj = await ownProject(c);
     if (!proj) return notFound(c);
-    const input = await parseJson(c, promptCreateSchema, "Check the title, URL slug and text");
+    const input = await parseJson(c, promptCreateSchema, "checkNewPrompt");
     const db = c.get("db");
     const parent = await findFolder(db, proj.id, input.folder);
     if (!parent) return notFound(c);
@@ -589,7 +589,7 @@ export const projectRoutes = new Hono<AppEnv>()
     const proj = await ownProject(c);
     const path = pathSegments(c);
     if (!proj || !path || path.length === 0) return notFound(c);
-    const change = await parseJson(c, itemPatchSchema, "Invalid change");
+    const change = await parseJson(c, itemPatchSchema, "invalidChange");
     const db = c.get("db");
     const item = await resolve(c, proj, path);
     if (!item) return notFound(c);
@@ -640,7 +640,7 @@ export const projectRoutes = new Hono<AppEnv>()
       }
       return c.json(toPromptDetail({ ...item.row, slug: change.slug }, item.parentPath));
     }
-    return c.json({ error: "Invalid change" }, 400);
+    return c.json(errorBody("invalidChange"), 400);
   })
   .delete("/:handle/:project/path/*", async (c) => {
     const proj = await ownProject(c);
@@ -664,7 +664,7 @@ export const projectRoutes = new Hono<AppEnv>()
     const proj = await ownProject(c);
     const path = pathSegments(c, "/copy");
     if (!proj || !path || path.length === 0) return notFound(c);
-    const input = await parseJson(c, promptCopySchema, "Check the title and URL slug");
+    const input = await parseJson(c, promptCopySchema, "checkCopy");
     const db = c.get("db");
     const item = await resolve(c, proj, path);
     if (item?.kind !== "prompt") return notFound(c);
@@ -760,7 +760,7 @@ export const projectRoutes = new Hono<AppEnv>()
     // A new current version: the edited state, or an old version restored as the newest.
     const found = await versionedPrompt(c);
     if (!found) return notFound(c);
-    const input = await parseJson(c, versionCreateSchema, "Check the prompt text and variables");
+    const input = await parseJson(c, versionCreateSchema, "checkPromptText");
     const db = c.get("db");
     const promptId = found.item.row.id;
     let content: { body: string; variables: ReturnType<typeof cleanDefs>; message: string };
@@ -812,7 +812,7 @@ export const projectRoutes = new Hono<AppEnv>()
     } catch (err) {
       // Two saves at the same moment picked the same number.
       if (isUniqueViolation(err)) {
-        return c.json({ error: "Saved at the same time elsewhere. Reload and try again." }, 409);
+        return c.json(errorBody("concurrentSave"), 409);
       }
       throw err;
     }
@@ -824,7 +824,7 @@ export const projectRoutes = new Hono<AppEnv>()
     // A plain save: the current version is edited in place, its number and the count stay.
     const found = await versionedPrompt(c);
     if (!found) return notFound(c);
-    const input = await parseJson(c, versionContentSchema, "Check the prompt text and variables");
+    const input = await parseJson(c, versionContentSchema, "checkPromptText");
     const db = c.get("db");
     await db.transaction(async (tx) => {
       await tx
@@ -858,7 +858,7 @@ export const projectRoutes = new Hono<AppEnv>()
       .where(and(eq(promptVersion.promptId, promptId), eq(promptVersion.number, number)));
     if (!v) return notFound(c);
     if (found.item.row.versionCount <= 1) {
-      return c.json({ error: "A prompt keeps at least one version" }, 400);
+      return c.json(errorBody("lastVersion"), 400);
     }
     await db.transaction(async (tx) => {
       if (v.id === found.item.row.versionId) {

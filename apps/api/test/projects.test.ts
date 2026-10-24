@@ -83,6 +83,7 @@ describe("projects and prompts", () => {
       expect(dup.status).toBe(409);
       expect(await dup.json()).toEqual({
         error: "This folder already has a prompt or folder with this URL slug",
+        code: "itemSlugTaken",
       });
     });
   });

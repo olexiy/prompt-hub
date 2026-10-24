@@ -44,3 +44,15 @@ test("wrong password shows a message", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByText("Email or password is wrong")).toBeVisible();
 });
+
+test("API errors show in the browser's language (#36)", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ ...(baseURL ? { baseURL } : {}), locale: "ru-RU" });
+  const page = await context.newPage();
+  await ownClientIp(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill(user.email);
+  await page.getByLabel("Пароль").fill("not-the-password");
+  await page.getByRole("button", { name: "Войти" }).click();
+  await expect(page.getByText("Неверный email или пароль")).toBeVisible();
+  await context.close();
+});

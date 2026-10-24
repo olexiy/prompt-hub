@@ -1,4 +1,4 @@
-import { APP_NAME, LOCALES, THEMES, type HealthResponse } from "@prompt-hub/core";
+import { APP_NAME, errorBody, type HealthResponse, LOCALES, THEMES } from "@prompt-hub/core";
 import { appUser, eq } from "@prompt-hub/db";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -49,7 +49,7 @@ const mePatch = z
   .refine((v) => Object.keys(v).length > 0);
 
 app.patch("/me", requireUser, async (c) => {
-  const changes = await parseJson(c, mePatch, "Unknown language or theme");
+  const changes = await parseJson(c, mePatch, "badPrefs");
   // Scoped by the signed-in user's id only: there is no way to address another user here.
   const [row] = await c
     .get("db")
@@ -57,7 +57,7 @@ app.patch("/me", requireUser, async (c) => {
     .set(changes)
     .where(eq(appUser.id, c.get("user").id))
     .returning();
-  if (!row) return c.json({ error: "Not found" }, 404);
+  if (!row) return c.json(errorBody("notFound"), 404);
   const { id, handle, displayName, locale, theme } = row;
   return c.json({ id, handle, displayName, locale, theme });
 });
