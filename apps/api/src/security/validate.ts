@@ -4,16 +4,25 @@
  */
 import type { Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { createMiddleware } from "hono/factory";
 import type { z } from "zod";
 import { ApiError } from "./errors";
 
 /** JSON bodies are small (prompts are the largest item); files go to R2 by other routes later. */
 export const MAX_BODY_BYTES = 256 * 1024;
 
-export const limitBody = bodyLimit({
-  maxSize: MAX_BODY_BYTES,
-  onError: (c) => c.json({ error: "Request body is too large" }, 413),
-});
+/** A whole project imported from a zip (#57) arrives as one JSON bundle. */
+export const MAX_IMPORT_BYTES = 8 * 1024 * 1024;
+
+const tooLarge = (c: Context) => c.json({ error: "Request body is too large" }, 413);
+const limitDefault = bodyLimit({ maxSize: MAX_BODY_BYTES, onError: tooLarge });
+const limitImport = bodyLimit({ maxSize: MAX_IMPORT_BYTES, onError: tooLarge });
+
+export const limitBody = createMiddleware((c, next) =>
+  c.req.method === "POST" && c.req.path === "/api/projects/import"
+    ? limitImport(c, next)
+    : limitDefault(c, next),
+);
 
 /**
  * True when a string anywhere in the value holds a NUL character: Postgres `text` and `jsonb`

@@ -1,5 +1,6 @@
 import type { FolderListing, PromptFile } from "@prompt-hub/core";
 import {
+  DownloadIcon,
   FileDirectoryFillIcon,
   FileIcon,
   GearIcon,
@@ -353,6 +354,17 @@ export function FolderView({
             <dt>{t("project.owner")}</dt>
             <dd>{owner}</dd>
           </dl>
+          {isOwner && (
+            <Button
+              as="a"
+              href={`${api}/export`}
+              download
+              size="small"
+              leadingVisual={DownloadIcon}
+            >
+              {t("zip.export")}
+            </Button>
+          )}
         </aside>
       )}
     </div>
