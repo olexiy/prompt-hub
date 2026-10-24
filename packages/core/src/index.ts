@@ -11,6 +11,7 @@ export * from "./projects";
 export * from "./routes";
 export * from "./variables";
 export * from "./slug";
+export * from "./tags";
 
 /** Product name shown in the UI and in API responses until the final name is chosen (#7). */
 export const APP_NAME = "Prompt Hub";

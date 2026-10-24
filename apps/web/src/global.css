@@ -210,6 +210,46 @@ body {
   margin-top: 16px;
 }
 
+/* Topic chips (#54, mockup .topics) */
+.ph-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ph-topic {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bgColor-accent-muted);
+  color: var(--fgColor-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+button.ph-topic {
+  cursor: pointer;
+}
+button.ph-topic:hover,
+.ph-topic[aria-pressed="true"],
+.ph-topic-active {
+  background: var(--bgColor-accent-emphasis);
+  color: var(--fgColor-onEmphasis);
+}
+.ph-topic-active {
+  padding-right: 0;
+}
+.ph-tags-line {
+  min-height: 28px;
+}
+
 /* Shared boxes and lists */
 .ph-mt {
   margin-top: 16px;

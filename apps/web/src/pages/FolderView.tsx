@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ApiError, del, patch } from "../api";
 import { useI18n } from "../i18n";
 import { navigate, RouterLink } from "../router";
+import { TagChips, TagFilter } from "../shell/Tags";
 import { CreateForm } from "./CreateForm";
 import { ProjectSettings } from "./ProjectSettings";
 
@@ -27,6 +28,10 @@ export function FolderView({
   const [settings, setSettings] = useState(false);
   const [newName, setNewName] = useState(listing.name);
   const [error, setError] = useState<string | null>(null);
+  // Filter over this folder's items (#54): text matches titles, names and tags; a topic chip
+  // narrows prompts to that tag.
+  const [filter, setFilter] = useState("");
+  const [tag, setTag] = useState<string | null>(null);
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
 
   const { owner, project, path } = listing;
@@ -35,6 +40,16 @@ export function FolderView({
   const api = `/api/projects/${owner}/${project.slug}`;
   const isRoot = path.length === 0;
   const isOwner = listing.access === "owner";
+  const needle = filter.trim().toLowerCase();
+  const folders = listing.folders.filter(
+    (f) => tag === null && `${f.slug} ${f.name}`.toLowerCase().includes(needle),
+  );
+  const prompts = listing.prompts.filter(
+    (q) =>
+      (tag === null || q.tags.includes(tag)) &&
+      `${q.slug} ${q.title} ${q.tags.join(" ")}`.toLowerCase().includes(needle),
+  );
+  const hasItems = listing.folders.length + listing.prompts.length > 0;
 
   async function rename() {
     try {
@@ -181,11 +196,32 @@ export function FolderView({
                 }}
               />
             )}
+            {hasItems && (
+              <div className="ph-row ph-wrap">
+                <TextInput
+                  className="ph-grow"
+                  placeholder={t("project.filter")}
+                  aria-label={t("project.filter")}
+                  value={filter}
+                  onChange={(e) => {
+                    setFilter(e.target.value);
+                  }}
+                />
+                {tag && (
+                  <TagFilter
+                    tag={tag}
+                    onClear={() => {
+                      setTag(null);
+                    }}
+                  />
+                )}
+              </div>
+            )}
             <div className="ph-box">
               {listing.folders.length === 0 && listing.prompts.length === 0 && (
                 <p className="ph-muted ph-pad">{isRoot ? t("project.empty") : t("folder.empty")}</p>
               )}
-              {listing.folders.map((f) => (
+              {folders.map((f) => (
                 <div className="ph-box-row" key={`f-${f.slug}`}>
                   <span className="ph-file ph-folder-icon">
                     <FileDirectoryFillIcon />
@@ -195,11 +231,12 @@ export function FolderView({
                   <span />
                 </div>
               ))}
-              {listing.prompts.map((q) => (
+              {prompts.map((q) => (
                 <div className="ph-box-row" key={`p-${q.slug}`}>
                   <span className="ph-file">
                     <FileIcon />
                     <RouterLink href={`${here}/${q.slug}`}>{q.title}</RouterLink>
+                    <TagChips tags={q.tags} active={tag} onSelect={setTag} />
                   </span>
                   <span className="ph-muted ph-mono ph-hide-sm">{q.slug}</span>
                   <span className="ph-muted">{date.format(new Date(q.updatedAt))}</span>
@@ -219,6 +256,7 @@ export function FolderView({
             <br />
             {project.description || t("project.noDescription")}
           </p>
+          <TagChips tags={project.tags} active={tag} onSelect={setTag} />
           <dl>
             <dt>{t("project.visibility")}</dt>
             <dd>

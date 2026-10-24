@@ -23,6 +23,7 @@ import { useI18n } from "../i18n";
 import { del, patch } from "../api";
 import { navigate } from "../router";
 import { useApi } from "../useApi";
+import { TagEditor } from "../shell/Tags";
 import { DuplicatePrompt } from "./DuplicatePrompt";
 import { EditPrompt } from "./EditPrompt";
 import { History } from "./History";
@@ -162,6 +163,12 @@ export function PromptPage({
           </>
         )}
       </div>
+      <TagEditor
+        key={detail.tags.join(",")}
+        tags={detail.tags}
+        api={isOwner ? `${api}/path/${itemPath}` : null}
+        onSaved={onChanged}
+      />
       {mode === "edit" && (
         <EditPrompt
           detail={detail}

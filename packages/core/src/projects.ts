@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { metaSchema, type Meta } from "./meta";
 import { MAX_ITEM_DEPTH } from "./routes";
+import { tagsSchema } from "./tags";
 import { isValidSlug } from "./slug";
 import { MAX_PROMPT_BODY, variableDefsSchema, type VariableDef } from "./variables";
 
@@ -31,6 +32,7 @@ export const projectPatchSchema = z
     description: z.string().trim().max(1000),
     archived: z.boolean(),
     visibility: z.enum(["PRIVATE", "PUBLIC"]),
+    tags: tagsSchema,
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, "Nothing to change");
@@ -55,7 +57,7 @@ export type PromptCreate = z.input<typeof promptCreateSchema>;
 /**
  * PATCH on a path, exactly one change: rename a folder (`name`); move a prompt into another
  * folder (`to`), retitle it (`title`), change its URL slug (`slug`) or replace its meta fields
- * (`meta`, the whole map, #52).
+ * (`meta`, the whole map, #52) or its tags (`tags`, the whole set, #54).
  */
 export const itemPatchSchema = z
   .strictObject({
@@ -64,6 +66,7 @@ export const itemPatchSchema = z
     title: z.string().trim().min(1).max(200),
     slug,
     meta: metaSchema,
+    tags: tagsSchema,
   })
   .partial()
   .refine((v) => Object.keys(v).length === 1, "Exactly one change");
@@ -91,6 +94,8 @@ export interface ProjectSummary {
   visibility: Visibility;
   /** Archived projects are hidden from the dashboard list but stay reachable by URL. */
   archived: boolean;
+  /** Topic tags, sorted (#54). */
+  tags: string[];
   promptCount: number;
   updatedAt: string;
 }
@@ -98,6 +103,8 @@ export interface ProjectSummary {
 export interface PromptSummary {
   slug: string;
   title: string;
+  /** Topic tags, sorted (#54). */
+  tags: string[];
   updatedAt: string;
 }
 

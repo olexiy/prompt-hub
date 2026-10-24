@@ -43,13 +43,17 @@ import {
   appUser,
   createDb,
   folder,
+  inArray,
   isNotNull,
   isNull,
   ne,
   project,
   prompt,
+  projectTag,
+  promptTag,
   promptVersion,
   sql,
+  tag,
   type Db,
 } from "@prompt-hub/db";
 import type { Context } from "hono";
@@ -86,6 +90,14 @@ function cleanDefs(
 // "id" would resolve to prompt.id instead of the outer project.id.
 const promptCount = sql<number>`(select count(*)::int from "prompt" where "prompt"."project_id" = "project"."id")`;
 
+// Tag names of a project / prompt as a sorted JSON array (explicit names, as above).
+const projectTags = sql<
+  string[]
+>`(select coalesce(jsonb_agg("tag"."name" order by "tag"."name"), '[]'::jsonb) from "project_tag" join "tag" on "tag"."id" = "project_tag"."tag_id" where "project_tag"."project_id" = "project"."id")`;
+const promptTags = sql<
+  string[]
+>`(select coalesce(jsonb_agg("tag"."name" order by "tag"."name"), '[]'::jsonb) from "prompt_tag" join "tag" on "tag"."id" = "prompt_tag"."tag_id" where "prompt_tag"."prompt_id" = "prompt"."id")`;
+
 const summaryColumns = {
   id: project.id,
   slug: project.slug,
@@ -93,6 +105,7 @@ const summaryColumns = {
   description: project.description,
   visibility: project.visibility,
   archivedAt: project.archivedAt,
+  tags: projectTags,
   promptCount,
   updatedAt: project.updatedAt,
 };
@@ -104,6 +117,7 @@ type ProjectRow = {
   description: string;
   visibility: string;
   archivedAt: Date | null;
+  tags: string[];
   promptCount: number;
   updatedAt: Date;
 };
@@ -115,6 +129,7 @@ function toSummary(row: Omit<ProjectRow, "id">): ProjectSummary {
     description: row.description,
     visibility: row.visibility as Visibility,
     archived: row.archivedAt !== null,
+    tags: row.tags,
     promptCount: row.promptCount,
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -200,7 +215,12 @@ async function listing(
       .where(and(eq(folder.projectId, proj.id), parentIs(dir.id)))
       .orderBy(asc(folder.name)),
     db
-      .select({ slug: prompt.slug, title: prompt.title, updatedAt: prompt.updatedAt })
+      .select({
+        slug: prompt.slug,
+        title: prompt.title,
+        tags: promptTags,
+        updatedAt: prompt.updatedAt,
+      })
       .from(prompt)
       .where(and(eq(prompt.projectId, proj.id), inFolder(dir.id)))
       .orderBy(asc(prompt.title)),
@@ -227,6 +247,7 @@ async function promptAt(db: Db, projectId: string, folderId: string | null, slug
       id: prompt.id,
       slug: prompt.slug,
       title: prompt.title,
+      tags: promptTags,
       meta: prompt.meta,
       updatedAt: prompt.updatedAt,
       versionId: promptVersion.id,
@@ -253,6 +274,7 @@ function toPromptDetail(
     folder: folderPath,
     slug: row.slug,
     title: row.title,
+    tags: row.tags,
     updatedAt: row.updatedAt.toISOString(),
     versionCount: row.versionCount,
     meta: row.meta,
@@ -322,6 +344,59 @@ async function publicProject(c: Context<AppEnv>): Promise<ProjectRow | null> {
   return row ?? null;
 }
 
+type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/**
+ * Replaces the tag set of a project or prompt (#54): creates the owner's missing tags, relinks,
+ * then drops the owner's tags that nothing uses any more.
+ */
+async function setTags(
+  tx: Tx,
+  ownerId: string,
+  target: { project: string } | { prompt: string },
+  names: readonly string[],
+) {
+  if (names.length > 0) {
+    await tx
+      .insert(tag)
+      .values(names.map((name) => ({ ownerId, name })))
+      .onConflictDoNothing();
+  }
+  const ids =
+    names.length === 0
+      ? []
+      : await tx
+          .select({ id: tag.id })
+          .from(tag)
+          .where(and(eq(tag.ownerId, ownerId), inArray(tag.name, [...names])));
+  if ("project" in target) {
+    await tx.delete(projectTag).where(eq(projectTag.projectId, target.project));
+    if (ids.length > 0) {
+      await tx
+        .insert(projectTag)
+        .values(ids.map((t) => ({ projectId: target.project, tagId: t.id })));
+    }
+  } else {
+    await tx.delete(promptTag).where(eq(promptTag.promptId, target.prompt));
+    if (ids.length > 0) {
+      await tx.insert(promptTag).values(ids.map((t) => ({ promptId: target.prompt, tagId: t.id })));
+    }
+  }
+  await dropUnusedTags(tx, ownerId);
+}
+
+/** Deletes the owner's tags that no project or prompt carries (after unlinking or deletes). */
+const dropUnusedTags = (db: Pick<Db, "delete">, ownerId: string) =>
+  db
+    .delete(tag)
+    .where(
+      and(
+        eq(tag.ownerId, ownerId),
+        sql`not exists (select 1 from "project_tag" where "project_tag"."tag_id" = "tag"."id")`,
+        sql`not exists (select 1 from "prompt_tag" where "prompt_tag"."tag_id" = "tag"."id")`,
+      ),
+    );
+
 const touchProject = (db: Pick<Db, "update">, projectId: string) =>
   db.update(project).set({ updatedAt: new Date() }).where(eq(project.id, projectId));
 
@@ -330,6 +405,8 @@ export const projectRoutes = new Hono<AppEnv>()
   .get("/", async (c) => {
     // `?archived=1` lists the archived projects instead of the active ones.
     const archived = c.req.query("archived") === "1";
+    // `?tag=` keeps the projects that carry this tag (#54).
+    const tagFilter = c.req.query("tag");
     const rows = await c
       .get("db")
       .select(summaryColumns)
@@ -338,6 +415,9 @@ export const projectRoutes = new Hono<AppEnv>()
         and(
           eq(project.ownerId, c.get("user").id),
           archived ? isNotNull(project.archivedAt) : isNull(project.archivedAt),
+          tagFilter === undefined
+            ? undefined
+            : sql`exists (select 1 from "project_tag" join "tag" on "tag"."id" = "project_tag"."tag_id" where "project_tag"."project_id" = "project"."id" and "tag"."name" = ${tagFilter})`,
         ),
       )
       .orderBy(desc(project.updatedAt));
@@ -352,7 +432,7 @@ export const projectRoutes = new Hono<AppEnv>()
         .values({ ownerId: c.get("user").id, ...input })
         .returning();
       if (!row) throw new Error("project insert returned nothing");
-      return c.json(toSummary({ ...row, promptCount: 0 }), 201);
+      return c.json(toSummary({ ...row, tags: [], promptCount: 0 }), 201);
     } catch (err) {
       if (isUniqueViolation(err)) {
         return c.json({ error: "You already have a project with this URL slug" }, 409);
@@ -368,7 +448,7 @@ export const projectRoutes = new Hono<AppEnv>()
   .patch("/:handle/:project", async (c) => {
     const proj = await ownProject(c);
     if (!proj) return notFound(c);
-    const { archived, ...fields } = await parseJson(
+    const { archived, tags, ...fields } = await parseJson(
       c,
       projectPatchSchema,
       "Check the project settings",
@@ -380,14 +460,16 @@ export const projectRoutes = new Hono<AppEnv>()
         : { archivedAt: archived ? (proj.archivedAt ?? new Date()) : null }),
     };
     try {
-      const [row] = await c
-        .get("db")
-        .update(project)
-        .set(changes)
-        .where(eq(project.id, proj.id))
-        .returning();
+      const row = await c.get("db").transaction(async (tx) => {
+        const [updated] =
+          Object.keys(changes).length > 0
+            ? await tx.update(project).set(changes).where(eq(project.id, proj.id)).returning()
+            : await tx.select().from(project).where(eq(project.id, proj.id));
+        if (tags !== undefined) await setTags(tx, c.get("user").id, { project: proj.id }, tags);
+        return updated;
+      });
       if (!row) return notFound(c);
-      return c.json(toSummary({ ...row, promptCount: proj.promptCount }));
+      return c.json(toSummary({ ...row, tags: tags ?? proj.tags, promptCount: proj.promptCount }));
     } catch (err) {
       if (isUniqueViolation(err)) {
         return c.json({ error: "You already have a project with this URL slug" }, 409);
@@ -401,6 +483,7 @@ export const projectRoutes = new Hono<AppEnv>()
     const proj = await ownProject(c);
     if (!proj) return notFound(c);
     await c.get("db").delete(project).where(eq(project.id, proj.id));
+    await dropUnusedTags(c.get("db"), c.get("user").id);
     return c.body(null, 204);
   })
   .get("/:handle/:project/path/*", async (c) => {
@@ -535,6 +618,14 @@ export const projectRoutes = new Hono<AppEnv>()
         .where(eq(prompt.id, item.row.id));
       return c.json(toPromptDetail({ ...item.row, meta: change.meta }, item.parentPath));
     }
+    if (item.kind === "prompt" && change.tags !== undefined) {
+      const names = change.tags;
+      await db.transaction(async (tx) => {
+        await setTags(tx, c.get("user").id, { prompt: item.row.id }, names);
+        await tx.update(prompt).set({ updatedAt: new Date() }).where(eq(prompt.id, item.row.id));
+      });
+      return c.json(toPromptDetail({ ...item.row, tags: names }, item.parentPath));
+    }
     if (item.kind === "prompt" && change.slug !== undefined) {
       if (await slugUsedByFolder(db, proj.id, item.parentId, change.slug)) return nameTaken(c);
       try {
@@ -560,6 +651,7 @@ export const projectRoutes = new Hono<AppEnv>()
     } else if (item.kind === "prompt") {
       await db.delete(prompt).where(eq(prompt.id, item.row.id));
     }
+    await dropUnusedTags(db, c.get("user").id);
     await touchProject(db, proj.id);
     return c.body(null, 204);
   })
@@ -606,6 +698,7 @@ export const projectRoutes = new Hono<AppEnv>()
           .returning();
         if (!v) throw new Error("version insert returned nothing");
         await tx.update(prompt).set({ currentVersionId: v.id }).where(eq(prompt.id, p.id));
+        await setTags(tx, c.get("user").id, { prompt: p.id }, source.tags);
         await touchProject(tx, proj.id);
       });
     } catch (err) {
@@ -810,3 +903,18 @@ export const publicProjectRoutes = new Hono<AppEnv>()
     }
     return c.json(toPublicPrompt(toPromptDetail(item.row, item.parentPath)));
   });
+
+/** /api/tags — the signed-in user's tags in use, with how many projects and prompts carry each. */
+export const tagRoutes = new Hono<AppEnv>().use("*", requireUser).get("/", async (c) => {
+  const rows = await c
+    .get("db")
+    .select({
+      name: tag.name,
+      projects: sql<number>`(select count(*)::int from "project_tag" where "project_tag"."tag_id" = "tag"."id")`,
+      prompts: sql<number>`(select count(*)::int from "prompt_tag" where "prompt_tag"."tag_id" = "tag"."id")`,
+    })
+    .from(tag)
+    .where(eq(tag.ownerId, c.get("user").id))
+    .orderBy(asc(tag.name));
+  return c.json({ tags: rows });
+});

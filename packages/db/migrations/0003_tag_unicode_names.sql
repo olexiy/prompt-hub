@@ -1,0 +1,2 @@
+ALTER TABLE "tag" DROP CONSTRAINT "tag_name_check";--> statement-breakpoint
+ALTER TABLE "tag" ADD CONSTRAINT "tag_name_check" CHECK (length("tag"."name") between 1 and 32 and "tag"."name" !~ '[[:space:]]');

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ApiError, del, patch } from "../api";
 import { useI18n } from "../i18n";
 import { navigate } from "../router";
+import { parseTags } from "../shell/Tags";
 
 /**
  * Project settings (#51, mockup: project → Settings): name, URL slug and description; archive or
@@ -26,6 +27,7 @@ export function ProjectSettings({
   const [name, setName] = useState(project.name);
   const [slug, setSlug] = useState(project.slug);
   const [description, setDescription] = useState(project.description);
+  const [topics, setTopics] = useState(project.tags.join(", "));
   const [confirmName, setConfirmName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,13 +46,24 @@ export function ProjectSettings({
     }
   }
 
-  const save = () =>
-    run(async () => {
-      const saved = await patch<ProjectSummary>(api, { name, slug, description });
+  const save = () => {
+    const parsed = parseTags(topics);
+    if ("invalid" in parsed) {
+      setError(t("tags.invalid", { tag: parsed.invalid }));
+      return;
+    }
+    void run(async () => {
+      const saved = await patch<ProjectSummary>(api, {
+        name,
+        slug,
+        description,
+        tags: parsed.tags,
+      });
       if (saved.slug !== project.slug) navigate(`/${owner}/${saved.slug}`);
       else onChanged();
       onClose();
     });
+  };
 
   const toggleArchive = () =>
     run(async () => {
@@ -80,7 +93,7 @@ export function ProjectSettings({
         aria-label={t("settings.projectTitle")}
         onSubmit={(e) => {
           e.preventDefault();
-          void save();
+          save();
         }}
       >
         <Heading as="h2" className="ph-h2">
@@ -125,6 +138,18 @@ export function ProjectSettings({
               setDescription(e.target.value);
             }}
           />
+        </FormControl>
+        <FormControl>
+          <FormControl.Label>{t("tags.label")}</FormControl.Label>
+          <TextInput
+            block
+            value={topics}
+            placeholder={t("tags.placeholder")}
+            onChange={(e) => {
+              setTopics(e.target.value);
+            }}
+          />
+          <FormControl.Caption>{t("tags.hint")}</FormControl.Caption>
         </FormControl>
         <div className="ph-row">
           <Button type="submit" variant="primary" loading={busy}>
