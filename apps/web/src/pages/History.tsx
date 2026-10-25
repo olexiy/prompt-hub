@@ -105,7 +105,7 @@ export function History({
             <div className="ph-main-col">
               <b>v{v.number}</b>
               {v.message && <> · {v.message}</>}
-              <div className="ph-muted ph-small">{when.format(new Date(v.createdAt))}</div>
+              <div className="ph-muted ph-small ph-date">{when.format(new Date(v.createdAt))}</div>
             </div>
             <span>{v.current && <Label variant="success">{t("prompt.live")}</Label>}</span>
             <span className="ph-row">

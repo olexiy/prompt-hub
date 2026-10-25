@@ -25,6 +25,28 @@ corepack pnpm e2e
 
 `e2e` needs a fresh `build` (the Worker serves `apps/web/dist`). It starts `wrangler dev` on 8788 itself, so it never touches `pnpm dev` on 8787.
 
+## Visual regression and performance budget (#37)
+
+Both run **locally only**, against the local stack; nothing touches Cloudflare or Supabase cloud.
+
+```bash
+corepack pnpm visual
+```
+
+`e2e/visual/visual.spec.ts` screenshots dashboard, project, prompt, history and settings in light and dark, desktop and phone, with a fixed user (`visual@example.test`, handle `visual`) and fixed data; dates are masked. Baselines live in `e2e/visual/__screenshots__/<platform>/<project>/` (Edge on Windows today) and allow 20 differing pixels. Like `e2e`, it needs a fresh `build`.
+
+```bash
+corepack pnpm visual:update
+```
+
+Rewrites the baselines after an intended UI change; commit them with the change and look at the new pictures in the diff. A different OS or browser renders fonts differently, so a new machine first runs `visual:update` into its own platform folder.
+
+```bash
+corepack pnpm perf
+```
+
+`e2e/perf/perf.ts` (plain Node, no k6) seeds a throwaway user with 60 prompts on `pnpm dev` (8787; `PERF_URL` for another local port, any non-local URL is refused), then measures sign-in, project list, project root, prompt, history and search with 5 requests in parallel and prints p50/p95/max. It exits with 1 when a p95 is over its budget (in the script: about 4x the values measured on 2026-10-25, e.g. 200 ms for reads).
+
 ## Browsers
 
 Playwright uses an installed browser instead of downloading its own: **Microsoft Edge** on Windows, **Google Chrome** on the GitHub runner (`E2E_CHANNEL=chrome` in CI). Set `E2E_CHANNEL` to override.

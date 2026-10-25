@@ -2,6 +2,10 @@
 
 Newest first. Format: date — decision. _Why._ Alternatives considered.
 
+## 2026-10-25 — Visual regression and performance budget run locally (#37)
+
+Screenshot baselines (Playwright `toHaveScreenshot`) are kept per platform and checked with `corepack pnpm visual` on the developer machine; there is no CI job. The performance budget is a small Node script (`corepack pnpm perf`) against the local stack with p95 budgets per endpoint, not k6. _Why:_ baselines from Edge on Windows do not match Chrome on the Linux runner (fonts, antialiasing), and a CI job would need its own Linux baselines kept in step; for one developer the local check catches the same regressions. k6 is a separate binary download for six HTTP scenarios that `fetch` covers. Load tests against Cloudflare/Supabase free tiers are ruled out (quotas). Alternatives: Linux baselines generated in Docker or CI (revisit when more people change the UI), k6.
+
 ## 2026-10-25 — Reset links sign in only after the new password is set (#61)
 
 `/auth/callback` keeps the link's tokens in memory and asks `POST /api/auth/link` whose link it is (no cookies set); the page shows the address. `POST /api/auth/password { password, link }` checks that the link session is fresh — an `amr` entry `otp`/`recovery`/`invite`/`magiclink` at most one hour old (`isFreshLinkSession`; Supabase's implicit flow reports reset and invite links as `otp`) — sets the password with it, and only then sets the session cookies. An ordinary session cannot change the password. _Why:_ before, `/auth/session` accepted any valid token and signed in at once, so a crafted link (even the attacker's own reset link) silently signed a visitor into the attacker's account (login CSRF), and a hijacked session could change the password without the old one. Now nobody is signed in by merely opening a link, and the address on the page shows whose password is being set. Alternatives: only checking the `amr` method (an attacker's own reset link still passes), a form asking for the current password (no such form yet; reset users do not know it).

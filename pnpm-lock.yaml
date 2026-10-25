@@ -284,6 +284,9 @@ importers:
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
 
   packages/core:
     dependencies:
