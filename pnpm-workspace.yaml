@@ -23,5 +23,9 @@ allowBuilds:
 
 # drizzle-kit pulls esbuild 0.18 through the deprecated @esbuild-kit packages (GHSA-67mh-4wv8-2f99,
 # dev-server CORS, dev-only). Force a fixed esbuild there; drizzle-kit generate is tested in CI.
+# @cloudflare/vitest-plugin pins zod 4.6.5 (GHSA-mrhx-c7xc-m3w5) and miniflare brings undici 7.29.1
+# (GHSA-xjj6-f33q-929c and two more, #77); both are test tooling only. Drop when upstream catches up.
 overrides:
   "@esbuild-kit/core-utils>esbuild": ^0.25.0
+  "@cloudflare/vitest-plugin>zod": ^4.6.7
+  undici: ^7.30.1
