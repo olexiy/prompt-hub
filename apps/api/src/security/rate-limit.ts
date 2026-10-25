@@ -6,6 +6,7 @@
 import { errorBody } from "@prompt-hub/core";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "../app-env";
+import { log } from "./log";
 
 /** Which binding to use: strict for credential endpoints, looser for other writes. */
 export type Limiter = "AUTH_LIMITER" | "WRITE_LIMITER";
@@ -27,6 +28,7 @@ export function rateLimit(limiter: Limiter, scope?: string) {
     const ip = clientIp(c.req);
     const { success } = await c.env[limiter].limit({ key: scope ? `${scope}:${ip}` : ip });
     if (!success) {
+      log.warn("rate_limited", { limiter, scope, ip, path: c.req.path });
       c.header("Retry-After", "60");
       return c.json(errorBody("tooManyRequests"), 429);
     }

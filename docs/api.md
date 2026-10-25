@@ -7,7 +7,7 @@ JSON over HTTPS on the same origin as the web app (`/api/*`). Session in `__Host
 | GET    | `/api/health`                                  | liveness                                                                                      |                           |
 | GET    | `/api/auth/session`                            | current user or `null` (renews the access token)                                              |                           |
 | POST   | `/api/auth/sign-in`, `/sign-out`, `/refresh`   | session cookies                                                                               | 400, 401, 429             |
-| POST   | `/api/auth/reset`, `/session`, `/password`     | password reset flow                                                                           | 400, 401, 429             |
+| POST   | `/api/auth/reset`, `/session`, `/password`     | reset flow; `/session` and `/password` need a reset/invite link session ≤ 1 h old (#61)       | 400, 401, 403, 429        |
 | GET    | `/api/me`                                      | signed-in user                                                                                | 401                       |
 | PATCH  | `/api/me`                                      | `{ locale?, theme? }`                                                                         | 400, 401                  |
 | GET    | `/api/projects`                                | own projects, newest first, with prompt counts                                                | 401                       |

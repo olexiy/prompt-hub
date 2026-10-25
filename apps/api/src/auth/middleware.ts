@@ -3,6 +3,8 @@ import { errorBody } from "@prompt-hub/core";
 import { createDb } from "@prompt-hub/db";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "../app-env";
+import { log } from "../security/log";
+import { clientIp } from "../security/rate-limit";
 import { readSession } from "./cookies";
 import { verifyAccessToken } from "./jwt";
 import { ensureAppUser } from "./users";
@@ -14,7 +16,10 @@ import { ensureAppUser } from "./users";
 export const sameOrigin = createMiddleware<AppEnv>(async (c, next) => {
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
     const origin = c.req.header("origin");
-    if (origin !== new URL(c.req.url).origin) return c.json(errorBody("forbidden"), 403);
+    if (origin !== new URL(c.req.url).origin) {
+      log.warn("origin_refused", { origin, ip: clientIp(c.req), path: c.req.path });
+      return c.json(errorBody("forbidden"), 403);
+    }
     if (!c.req.header("content-type")?.startsWith("application/json")) {
       return c.json(errorBody("expectedJson"), 415);
     }

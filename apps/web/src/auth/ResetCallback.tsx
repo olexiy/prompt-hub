@@ -32,12 +32,15 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Whose password this is, from the API: a link made for another account shows it here (#61).
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     history.replaceState(null, "", window.location.pathname);
     if (!tokens) return;
-    post("/api/auth/session", tokens).then(
-      () => {
+    post<{ email: string }>("/api/auth/session", tokens).then(
+      (res) => {
+        setEmail(res.email);
         setState("ready");
       },
       () => {
@@ -78,6 +81,7 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
 
   return (
     <AuthCard title={t("auth.newPasswordTitle")}>
+      {email && <p style={{ margin: 0 }}>{t("auth.newPasswordFor", { email })}</p>}
       {error && (
         <Banner variant="critical" title="Error" hideTitle layout="compact" description={error} />
       )}

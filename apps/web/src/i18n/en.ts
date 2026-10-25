@@ -43,6 +43,7 @@ export const en = {
   "auth.signInTitle": "Sign in to Prompt Hub",
   "auth.resetTitle": "Reset your password",
   "auth.newPasswordTitle": "Choose a new password",
+  "auth.newPasswordFor": "For the account {email}.",
   "auth.email": "Email address",
   "auth.password": "Password",
   "auth.newPassword": "New password",

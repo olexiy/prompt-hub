@@ -857,11 +857,20 @@ export const projectRoutes = new Hono<AppEnv>()
       .from(promptVersion)
       .where(and(eq(promptVersion.promptId, promptId), eq(promptVersion.number, number)));
     if (!v) return notFound(c);
-    if (found.item.row.versionCount <= 1) {
-      return c.json(errorBody("lastVersion"), 400);
-    }
-    await db.transaction(async (tx) => {
-      if (v.id === found.item.row.versionId) {
+    const deleted = await db.transaction(async (tx) => {
+      // Lock the prompt row, then count: two deletes at once must not both pass the check and
+      // leave a prompt without versions (#61). The live version id is reread under the lock.
+      const [locked] = await tx
+        .select({ currentVersionId: prompt.currentVersionId })
+        .from(prompt)
+        .where(eq(prompt.id, promptId))
+        .for("update");
+      const [left] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(promptVersion)
+        .where(eq(promptVersion.promptId, promptId));
+      if (!locked || (left?.n ?? 0) <= 1) return false;
+      if (v.id === locked.currentVersionId) {
         // The live version goes: the newest remaining one becomes live.
         const [next] = await tx
           .select({ id: promptVersion.id })
@@ -874,8 +883,16 @@ export const projectRoutes = new Hono<AppEnv>()
           .set({ currentVersionId: next?.id ?? null })
           .where(eq(prompt.id, promptId));
       }
-      await tx.delete(promptVersion).where(eq(promptVersion.id, v.id));
+      const gone = await tx
+        .delete(promptVersion)
+        .where(eq(promptVersion.id, v.id))
+        .returning({ id: promptVersion.id });
+      return gone.length > 0;
     });
+    if (!deleted) {
+      // Either the last version, or another request deleted this one a moment ago.
+      return c.json(errorBody("lastVersion"), 400);
+    }
     return c.body(null, 204);
   });
 

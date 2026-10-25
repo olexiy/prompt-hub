@@ -190,4 +190,18 @@ describe("versions", () => {
       expect(live.version.body).toBe("v1 {{a}}");
     });
   });
+
+  it("two deletes at once never remove the last version (#61)", async () => {
+    await withNewUser(async (s) => {
+      const u = await seed(s);
+      await request("POST", u.versions, { body: "v2" }, s.cookie);
+      const results = await Promise.all([
+        request("DELETE", `${u.versions}?n=1`, undefined, s.cookie),
+        request("DELETE", `${u.versions}?n=2`, undefined, s.cookie),
+      ]);
+      expect(results.map((r) => r.status).sort()).toEqual([204, 400]);
+      const live = await (await request("GET", u.item, undefined, s.cookie)).json<PromptDetail>();
+      expect(live.versionCount).toBe(1);
+    });
+  });
 });
