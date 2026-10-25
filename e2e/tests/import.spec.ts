@@ -79,7 +79,7 @@ test("import a prompt from .md (picker) and .txt (drop); other files are refused
   await expect(page).toHaveURL(new RegExp(`/${handle}/p/devushka-pod-dozhdem$`));
   await expect(page.getByRole("heading", { name: "Девушка под дождём" })).toBeVisible();
   await expect(page.getByTestId("prompt-preview")).toContainText("Größe");
-  await expect(page.getByRole("list", { name: "Topics" }).first()).toContainText("видео");
+  await expect(page.getByRole("list", { name: "Tags" }).first()).toContainText("видео");
   await expect(page.getByRole("region", { name: "Meta" })).toContainText("Für Oma");
 
   // A text file dropped onto the project page; the title comes from the file name.

@@ -167,6 +167,20 @@ export function Dashboard({ handle }: { handle: string }) {
             <Text as="p" className="ph-muted">
               {t("dashboard.emptyBody")}
             </Text>
+            {/* A call to action in the empty state, and a way to archived projects (#38). */}
+            <div className="ph-row ph-wrap">
+              <Button variant="primary" leadingVisual={PlusIcon} onClick={newProject}>
+                {t("dashboard.newProject")}
+              </Button>
+              <Button
+                variant="invisible"
+                onClick={() => {
+                  setArchived(true);
+                }}
+              >
+                {t("dashboard.openArchived")}
+              </Button>
+            </div>
           </div>
         )}
         <div className="ph-mt">

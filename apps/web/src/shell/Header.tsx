@@ -26,17 +26,26 @@ function Breadcrumb({ route }: { route: Route }) {
       });
     });
   }
+  // On a phone the full trail does not fit; a single link one level up stays (#38).
+  const up = parts.at(-2);
   return (
-    <nav className="ph-crumb" aria-label="Breadcrumb">
-      {parts.map((p, i) => (
-        <Fragment key={p.href}>
-          {i > 0 && <span className="ph-crumb-sep">/</span>}
-          <RouterLink href={p.href} aria-current={i === parts.length - 1 ? "page" : undefined}>
-            {i === parts.length - 1 ? <b>{p.label}</b> : p.label}
-          </RouterLink>
-        </Fragment>
-      ))}
-    </nav>
+    <>
+      <nav className="ph-crumb" aria-label="Breadcrumb">
+        {parts.map((p, i) => (
+          <Fragment key={p.href}>
+            {i > 0 && <span className="ph-crumb-sep">/</span>}
+            <RouterLink href={p.href} aria-current={i === parts.length - 1 ? "page" : undefined}>
+              {i === parts.length - 1 ? <b>{p.label}</b> : p.label}
+            </RouterLink>
+          </Fragment>
+        ))}
+      </nav>
+      {up && (
+        <RouterLink href={up.href} className="ph-crumb-up">
+          ← {up.label}
+        </RouterLink>
+      )}
+    </>
   );
 }
 

@@ -69,6 +69,8 @@ export function CreateForm({
         </FormControl.Label>
         <TextInput
           block
+          // The form opens on a click, so its first field takes the focus (#38).
+          autoFocus
           value={name}
           maxLength={kind === "prompt" ? 200 : 100}
           onChange={(e) => {

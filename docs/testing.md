@@ -38,6 +38,7 @@ Playwright uses an installed browser instead of downloading its own: **Microsoft
 - e2e specs that change account state create their own user (`e2e/tests/users.ts` `createUser`), and every page calls `ownClientIp(page)` so the per-IP sign-in limit never trips during a run.
 - Requests without `cf-connecting-ip` share one rate-limit key; API tests that send many writes give each request its own fake IP (see `apps/api/test/security.test.ts`).
 - No mocks of our own internals; mock only at the boundary (external HTTP).
+- Accessibility (#38): `e2e/tests/a11y.spec.ts` runs axe-core (`@axe-core/playwright`, WCAG 2.1 A/AA) over sign-in, dashboard, project, prompt and search in light and dark, desktop and phone. A new main screen gets a step there; a violation fails with "rule: element — help" lines.
 
 ## Local Supabase is part of the test setup (#22)
 

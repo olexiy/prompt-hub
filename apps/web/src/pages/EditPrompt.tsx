@@ -1,5 +1,13 @@
 import { syncDefinitions, type PromptDetail, type VariableDef } from "@prompt-hub/core";
-import { Banner, Button, FormControl, Heading, Textarea, TextInput } from "@primer/react";
+import {
+  Banner,
+  Button,
+  FormControl,
+  Heading,
+  Textarea,
+  TextInput,
+  useConfirm,
+} from "@primer/react";
 import { useState } from "react";
 import { ApiError, patch, post, put } from "../api";
 import { useI18n } from "../i18n";
@@ -30,6 +38,28 @@ export function EditPrompt({
   const [error, setError] = useState<string | null>(null);
   // Definitions follow the text as it is typed: new variables appear, removed ones disappear.
   const shown = syncDefinitions(body, defs);
+  const confirm = useConfirm();
+  const changed =
+    body !== detail.version.body ||
+    JSON.stringify(shown) !== JSON.stringify(detail.version.variables);
+  const dirty = changed || title !== detail.title;
+
+  /** Cancel asks before throwing edits away (UX review #38). */
+  async function cancel() {
+    if (
+      dirty &&
+      !(await confirm({
+        title: t("edit.discardTitle"),
+        content: t("edit.discardBody"),
+        confirmButtonContent: t("edit.discard"),
+        cancelButtonContent: t("edit.keepEditing"),
+        confirmButtonType: "danger",
+      }))
+    ) {
+      return;
+    }
+    onCancel();
+  }
 
   function setDef(name: string, field: "default" | "description", value: string) {
     const next = shown.map((d) => (d.name === name ? { ...d, [field]: value } : d));
@@ -41,9 +71,6 @@ export function EditPrompt({
     setError(null);
     try {
       if (title.trim() !== detail.title) await patch(apiItem, { title });
-      const changed =
-        body !== detail.version.body ||
-        JSON.stringify(shown) !== JSON.stringify(detail.version.variables);
       const content = {
         body,
         variables: shown.map((d) => ({
@@ -98,7 +125,10 @@ export function EditPrompt({
           />
           <FormControl.Caption>{t("form.bodyHint")}</FormControl.Caption>
         </FormControl>
-        <div className="ph-row">
+        <p className="ph-muted ph-small">
+          {t("edit.saveHint", { n: String(detail.version.number) })}
+        </p>
+        <div className="ph-row ph-wrap">
           <Button
             type="submit"
             variant="primary"
@@ -110,7 +140,7 @@ export function EditPrompt({
           <Button loading={busy === "new"} disabled={busy !== null} onClick={() => void save(true)}>
             {t("prompt.saveVersion")}
           </Button>
-          <Button onClick={onCancel}>{t("form.cancel")}</Button>
+          <Button onClick={() => void cancel()}>{t("form.cancel")}</Button>
         </div>
       </div>
       <aside className="ph-box ph-form ph-pad">

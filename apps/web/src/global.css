@@ -556,9 +556,32 @@ button.ph-topic:hover,
     font-size: 16px;
   }
 }
+/* History rows on a phone: number, message and date on top, the buttons wrap below (#38). */
+@media (max-width: 600px) {
+  .ph-commit {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ph-commit > .ph-row {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+.ph-crumb-up {
+  display: none;
+}
 @media (max-width: 520px) {
   .ph-crumb,
   .ph-logo-text {
     display: none;
+  }
+  .ph-crumb-up {
+    display: inline-block;
+    flex-shrink: 0;
+    overflow: hidden;
+    max-width: 34vw;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--fgColor-default);
   }
 }

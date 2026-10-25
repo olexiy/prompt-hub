@@ -11,7 +11,7 @@ test.afterEach(async () => {
   await user.remove();
 });
 
-test("topics: set on projects and prompts in any script, filter by chip and text (#54)", async ({
+test("tags: set on projects and prompts in any script, filter by chip and text (#54)", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -48,24 +48,24 @@ test("topics: set on projects and prompts in any script, filter by chip and text
     return me.handle;
   });
 
-  // Project topics in the settings, normalised as typed.
+  // Project tags in the settings, normalised as typed.
   await page.goto(`/${handle}/clips`);
   await page.getByRole("button", { name: "Settings" }).click();
   const settings = page.getByRole("form", { name: "Project settings" });
-  await settings.getByLabel("Topics").fill("a/b");
+  await settings.getByLabel("Tags").fill("a/b");
   await settings.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText(/Topic “a\/b” is not allowed/).first()).toBeVisible();
-  await settings.getByLabel("Topics").fill("Video, MiniMax H3, Видео");
+  await expect(page.getByText(/Tag “a\/b” is not allowed/).first()).toBeVisible();
+  await settings.getByLabel("Tags").fill("Video, MiniMax H3, Видео");
   await settings.getByRole("button", { name: "Save" }).click();
   const about = page.locator(".ph-about");
   await expect(about.getByRole("button")).toHaveText(["minimax-h3", "video", "видео"]);
 
-  // Prompt topics inline on the prompt page.
+  // Prompt tags inline on the prompt page.
   await page.goto(`/${handle}/clips/bus`);
-  await page.getByRole("button", { name: "Add topics" }).click();
-  await page.getByLabel("Topics, separated by commas").fill("9s, видео");
+  await page.getByRole("button", { name: "Add tags" }).click();
+  await page.getByLabel("Tags, separated by commas").fill("9s, видео");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("list", { name: "Topics" }).getByText("видео")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Tags" }).getByText("видео")).toBeVisible();
   await expectFitsScreen(page);
 
   // Project page: chip filter narrows prompts, text filter combines with it.
@@ -74,21 +74,21 @@ test("topics: set on projects and prompts in any script, filter by chip and text
   await expect(rows).toHaveCount(2);
   await rows.filter({ hasText: "Bus stop" }).getByRole("button", { name: "9s" }).click();
   await expect(rows).toHaveCount(1);
-  await expect(page.getByText("Topic: 9s")).toBeVisible();
-  await page.getByLabel("Filter by title or topic").fill("rain");
+  await expect(page.getByText("Tag: 9s")).toBeVisible();
+  await page.getByLabel("Filter by title or tag").fill("rain");
   await expect(rows).toHaveCount(0);
-  await page.getByRole("button", { name: "Clear topic filter" }).click();
+  await page.getByRole("button", { name: "Clear tag filter" }).click();
   await expect(rows).toHaveCount(1);
   await expect(rows).toContainText("Rain");
 
-  // Dashboard: chips on the rows filter projects; text matches topics too.
+  // Dashboard: chips on the rows filter projects; text matches tags too.
   await page.goto("/");
   const projects = page.locator(".ph-proj-row");
   await expect(projects).toHaveCount(2);
   await projects.first().getByRole("button", { name: "видео" }).click();
   await expect(projects).toHaveCount(1);
   await expect(projects).toContainText("Clips");
-  await page.getByRole("button", { name: "Clear topic filter" }).click();
+  await page.getByRole("button", { name: "Clear tag filter" }).click();
   await page.getByLabel("Filter projects by name or tag").fill("minimax");
   await expect(projects).toHaveCount(1);
   await expectFitsScreen(page);
