@@ -89,7 +89,8 @@ Each phase = a GitHub milestone + epic issue (`phase-N`). Tasks are created when
 ### Phase 2 — MVP · epic [#11](https://github.com/olexiy/prompt-hub/issues/11)
 
 **Goal:** "my prompts, online, safely" — Olexiy uses it daily instead of text files.
-**Exit criteria:** all MVP features in production with tests; comfy-h3-studio and vault prompts imported; backup restore tested; `/security-review` before release; a week of daily use.
+**Exit criteria:** all MVP features in production with tests; `/security-review` before release (#61 ✓); visual review with Olexiy; a week of daily use.
+**Scope changes (2026-10-25, Olexiy):** no existing prompt collection to import (#60 closed; file and zip import cover it later). Backups (#59), invite-only sign-up with Turnstile (#58) and custom SMTP (#68) move to Phase 4: at first up to ~5 users are added by hand in the Supabase dashboard, and no paid service is wanted yet.
 
 ### Phase 3 — v1 ComfyUI workbench · epic [#12](https://github.com/olexiy/prompt-hub/issues/12)
 
