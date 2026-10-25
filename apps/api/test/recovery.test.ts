@@ -1,6 +1,6 @@
 /**
- * Reset/invite link sessions (#61): /api/auth/session takes only a fresh `recovery`/`invite`
- * session, and /api/auth/password sets a password only within such a session.
+ * Reset/invite links (#61): /api/auth/link names the account of a fresh email-link session
+ * without signing in; /api/auth/password sets the password with that session, then signs in.
  */
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
@@ -63,7 +63,8 @@ describe("isFreshLinkSession", () => {
     email: "a@example.test",
     amr: [{ method, timestamp: 1_000_000 - age }],
   });
-  it("accepts a reset or invite link within the window only", () => {
+  it("accepts an email-link session within the window only", () => {
+    expect(isFreshLinkSession(claims("otp", 60), 1_000_000)).toBe(true);
     expect(isFreshLinkSession(claims("recovery", 60), 1_000_000)).toBe(true);
     expect(isFreshLinkSession(claims("invite", LINK_SESSION_SECONDS), 1_000_000)).toBe(true);
     expect(isFreshLinkSession(claims("recovery", LINK_SESSION_SECONDS + 1), 1_000_000)).toBe(false);
@@ -73,27 +74,39 @@ describe("isFreshLinkSession", () => {
 });
 
 describe("link sessions", () => {
-  it("refuses an ordinary session handed over as if it came from a link (login CSRF)", async () => {
+  it("refuses an ordinary session presented as a link (login CSRF)", async () => {
     await withNewUser(async (s) => {
-      const res = await request("POST", "/api/auth/session", tokensOf(s.cookie));
+      const res = await request("POST", "/api/auth/link", tokensOf(s.cookie));
       expect(res.status).toBe(401);
       expect(await res.json()).toMatchObject({ code: "expiredLink" });
+      const pw = await request("POST", "/api/auth/password", {
+        password: "x".repeat(16),
+        link: tokensOf(s.cookie),
+      });
+      expect(pw.status).toBe(401);
+      expect(pw.headers.getSetCookie()).toEqual([]);
+    });
+  });
+
+  it("names a reset link's account without signing anyone in", async () => {
+    await withNewUser(async (s) => {
+      const res = await request("POST", "/api/auth/link", await recoveryTokens(s.email));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ email: s.email });
       expect(res.headers.getSetCookie()).toEqual([]);
     });
   });
 
-  it("takes a reset-link session, names its account, and lets it set a password", async () => {
+  it("sets the new password with the link, then signs in", async () => {
     await withNewUser(async (s) => {
-      const res = await request("POST", "/api/auth/session", await recoveryTokens(s.email));
-      expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ ok: true, email: s.email });
-      const cookie = cookiesOf(res);
-      expect(cookie).toContain("__Host-ph_at=");
-
       const newPassword = `new-${crypto.randomUUID()}`;
-      expect(
-        (await request("POST", "/api/auth/password", { password: newPassword }, cookie)).status,
-      ).toBe(200);
+      const res = await request("POST", "/api/auth/password", {
+        password: newPassword,
+        link: await recoveryTokens(s.email),
+      });
+      expect(res.status).toBe(200);
+      const me = await request("GET", "/api/me", undefined, cookiesOf(res));
+      expect(me.status).toBe(200);
       const signIn = await request("POST", "/api/auth/sign-in", {
         email: s.email,
         password: newPassword,
@@ -102,7 +115,7 @@ describe("link sessions", () => {
     });
   });
 
-  it("does not let an ordinary session change the password without the old one", async () => {
+  it("an ordinary session cannot change the password (no link in the body)", async () => {
     await withNewUser(async (s) => {
       const res = await request(
         "POST",
@@ -110,8 +123,7 @@ describe("link sessions", () => {
         { password: "x".repeat(16) },
         s.cookie,
       );
-      expect(res.status).toBe(403);
-      // The old password still works.
+      expect(res.status).toBe(400);
       const signIn = await request("POST", "/api/auth/sign-in", {
         email: s.email,
         password: s.password,

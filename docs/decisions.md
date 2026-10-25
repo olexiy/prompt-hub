@@ -2,9 +2,9 @@
 
 Newest first. Format: date — decision. _Why._ Alternatives considered.
 
-## 2026-10-25 — Passwords are set only from a fresh link session (#61)
+## 2026-10-25 — Reset links sign in only after the new password is set (#61)
 
-`/auth/callback` hands a session to the API only when the access token's `amr` claim has a `recovery` or `invite` entry at most one hour old (`isFreshLinkSession`), and `POST /api/auth/password` refuses (403) any other session; the page shows which account the new password is for. _Why:_ before, any valid token was accepted, so a crafted link could silently sign someone into another account (login CSRF), and a hijacked ordinary session could change the password without knowing the old one. The `invite` method keeps the same page usable for invited users (#58). Alternatives: ask for the current password on every change (no such form yet; reset users do not know it), shorter or longer windows (1 h matches Supabase's default link lifetime).
+`/auth/callback` keeps the link's tokens in memory and asks `POST /api/auth/link` whose link it is (no cookies set); the page shows the address. `POST /api/auth/password { password, link }` checks that the link session is fresh — an `amr` entry `otp`/`recovery`/`invite`/`magiclink` at most one hour old (`isFreshLinkSession`; Supabase's implicit flow reports reset and invite links as `otp`) — sets the password with it, and only then sets the session cookies. An ordinary session cannot change the password. _Why:_ before, `/auth/session` accepted any valid token and signed in at once, so a crafted link (even the attacker's own reset link) silently signed a visitor into the attacker's account (login CSRF), and a hijacked session could change the password without the old one. Now nobody is signed in by merely opening a link, and the address on the page shows whose password is being set. Alternatives: only checking the `amr` method (an attacker's own reset link still passes), a form asking for the current password (no such form yet; reset users do not know it).
 
 ## 2026-10-24 — Project zip: open format, unzipped in the browser only (#57)
 

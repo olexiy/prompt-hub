@@ -1,6 +1,6 @@
 /** /api/auth/* — sign-in, sign-out, refresh and password reset. Sign-up does not exist. */
 import { errorBody } from "@prompt-hub/core";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../app-env";
 import { clearSession, readSession, setSession } from "./cookies";
@@ -26,7 +26,7 @@ const recoverySession = z.object({
   refreshToken: z.string().min(1).max(512),
   expiresIn: z.number().int().positive().max(86_400),
 });
-const newPassword = z.object({ password: z.string().min(12).max(200) });
+const newPassword = z.object({ password: z.string().min(12).max(200), link: recoverySession });
 
 export const authRoutes = new Hono<AppEnv>()
   .get("/session", async (c) => {
@@ -91,33 +91,31 @@ export const authRoutes = new Hono<AppEnv>()
     // Same answer for known and unknown addresses (no account enumeration).
     return c.json({ ok: true });
   })
-  .post("/session", rateLimit("AUTH_LIMITER"), async (c) => {
-    // The reset link lands on /auth/callback with tokens in the URL fragment; the page hands
-    // them over once so they end up in HttpOnly cookies and can be dropped from the page.
-    // Only a fresh reset/invite session is taken (#61): a link carrying someone's ordinary
-    // session would otherwise sign the visitor into that account unnoticed (login CSRF).
+  .post("/link", rateLimit("AUTH_LIMITER"), async (c) => {
+    // The reset (or invite) link lands on /auth/callback with tokens in the URL fragment. The
+    // page asks here whose link it is and shows the address; no session is set yet (#61).
     const body = await parseJson(c, recoverySession, "invalidLink");
-    const claims = await verifyAccessToken(body.accessToken, c.env.SUPABASE_URL);
-    if (!claims || !isFreshLinkSession(claims)) {
-      log.warn("auth_link_refused", { ip: clientIp(c.req), user: claims?.sub });
-      return c.json(errorBody("expiredLink"), 401);
-    }
-    setSession(c, body);
-    log.info("auth_link_session", { user: claims.sub, ip: clientIp(c.req) });
-    // The page shows the address, so a visitor sees whose password they are about to set.
-    return c.json({ ok: true, email: claims.email });
+    const claims = await linkClaims(c, body.accessToken);
+    if (!claims) return c.json(errorBody("expiredLink"), 401);
+    return c.json({ email: claims.email });
   })
   .post("/password", rateLimit("AUTH_LIMITER"), async (c) => {
+    // Sets the new password with the link's session and only then signs the visitor in (#61).
+    // A link someone else made for their own account therefore never signs anybody in by just
+    // being opened (login CSRF), and an ordinary session cannot change the password at all.
     const body = await parseJson(c, newPassword, "weakPassword");
-    const { access } = readSession(c);
-    const claims = await verifyAccessToken(access, c.env.SUPABASE_URL);
-    if (!claims || !access) return c.json(errorBody("unauthorized"), 401);
-    // Without the current password only a fresh reset/invite session may set one (#61).
-    if (!isFreshLinkSession(claims)) {
-      log.warn("auth_password_refused", { user: claims.sub, ip: clientIp(c.req) });
-      return c.json(errorBody("expiredLink"), 403);
-    }
-    await updatePassword(c.env, access, body.password);
+    const claims = await linkClaims(c, body.link.accessToken);
+    if (!claims) return c.json(errorBody("expiredLink"), 401);
+    await updatePassword(c.env, body.link.accessToken, body.password);
+    setSession(c, body.link);
     log.info("auth_password_changed", { user: claims.sub, ip: clientIp(c.req) });
     return c.json({ ok: true });
   });
+
+/** Claims of a fresh email-link session, or null (logged as a refused link). */
+async function linkClaims(c: Context<AppEnv>, accessToken: string) {
+  const claims = await verifyAccessToken(accessToken, c.env.SUPABASE_URL);
+  if (claims && isFreshLinkSession(claims)) return claims;
+  log.warn("auth_link_refused", { ip: clientIp(c.req), user: claims?.sub });
+  return null;
+}

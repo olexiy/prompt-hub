@@ -16,15 +16,18 @@ export interface AccessClaims {
 export const LINK_SESSION_SECONDS = 60 * 60;
 
 /**
- * True when the session came from a password-reset or invite link within the last hour (#61).
- * Only such sessions may be handed over by /auth/callback and may set a new password: a normal
- * session cannot, so a stolen or planted session is not enough to take over an account.
+ * `amr` methods of a session that came from a link in an email. Supabase's implicit flow (our
+ * reset and invite links) reports them as `otp`; the PKCE flow names the link type.
+ */
+const LINK_METHODS = new Set(["otp", "recovery", "invite", "magiclink"]);
+
+/**
+ * True when the session came from an email link within the last hour (#61). Only such sessions
+ * may set a new password without the old one; an ordinary password session cannot.
  */
 export function isFreshLinkSession(claims: AccessClaims, now = Date.now() / 1000): boolean {
   return claims.amr.some(
-    (a) =>
-      (a.method === "recovery" || a.method === "invite") &&
-      now - a.timestamp <= LINK_SESSION_SECONDS,
+    (a) => LINK_METHODS.has(a.method) && now - a.timestamp <= LINK_SESSION_SECONDS,
   );
 }
 
