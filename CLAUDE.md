@@ -22,7 +22,7 @@ When Olexiy says «работай над проектом» / "work on the proje
 
 ## Current phase: 2 — MVP (epic #11)
 
-Phase 1 is done (2026-10-23): production at https://prompt-hub.ol-sakura.workers.dev, staging and PR previews from Actions. Phase 2 order (epic #11): #48 folders ✓ → #49 versions ✓ → #50 diff ✓ → fixes from the prod run #69 Cyrillic slugs, #70 save edits the current version → #51 manage/delete/duplicate → #52 meta → #53 public → #54 tags → #55 search → #56 → #57 → #58 invites (needs #68 SMTP) → #59 → #36/#37 → #60 → #38 → #61 → release.
+Phase 1 is done (2026-10-23): production at https://prompt-hub.ol-sakura.workers.dev, staging and PR previews from Actions. Phase 2 tasks are all merged (2026-10-25): folders, versions, diff, manage, meta, public, tags, search, file and zip import, localized errors, security review #61, UX review #38, visual/perf checks #37. Left before closing epic #11: production deploy by Olexiy (incl. migration 0003), visual review with Olexiy, a week of daily use. Moved to Phase 4 by Olexiy: invites #58, SMTP #68, backups #59; #60 closed (nothing to import). UX follow-ups #88–#92 and #94 are in Phase 3.
 
 - **The repo is public:** never commit secrets, personal data or run data; push protection and gitleaks are a safety net, not the plan.
 - **Feature talk with Olexiy:** he dictates by voice; collect ideas as a numbered list first, prioritise afterwards. Feature IDs in `docs/FEATURES.md` are stable references.
