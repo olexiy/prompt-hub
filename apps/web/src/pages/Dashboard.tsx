@@ -205,7 +205,9 @@ export function Dashboard({ handle }: { handle: string }) {
               <TagChips tags={p.tags} active={tag} onSelect={setTag} />
               <div className="ph-meta-line">
                 <span>{t("dashboard.promptCount", { count: String(p.promptCount) })}</span>
-                <span>{t("dashboard.updated", { date: date.format(new Date(p.updatedAt)) })}</span>
+                <span className="ph-date">
+                  {t("dashboard.updated", { date: date.format(new Date(p.updatedAt)) })}
+                </span>
               </div>
             </article>
           ))}

@@ -29,7 +29,12 @@ async function violations(page: Page): Promise<string[]> {
 async function api(page: Page, method: string, path: string, body: unknown) {
   const res = await page.request.fetch(path, {
     method,
-    headers: { origin: new URL(page.url()).origin, "content-type": "application/json" },
+    headers: {
+      origin: new URL(page.url()).origin,
+      "content-type": "application/json",
+      // page.request does not carry the page's extra headers; its own fake IP per call.
+      "cf-connecting-ip": `10.8.${String(Math.floor(Math.random() * 250))}.${String(Math.floor(Math.random() * 250))}`,
+    },
     data: body,
   });
   expect(res.ok(), `${method} ${path}`).toBe(true);

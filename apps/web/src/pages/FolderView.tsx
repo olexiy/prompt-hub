@@ -323,7 +323,7 @@ export function FolderView({
                     <TagChips tags={q.tags} active={tag} onSelect={setTag} />
                   </span>
                   <span className="ph-muted ph-mono ph-hide-sm">{q.slug}</span>
-                  <span className="ph-muted">{date.format(new Date(q.updatedAt))}</span>
+                  <span className="ph-muted ph-date">{date.format(new Date(q.updatedAt))}</span>
                 </div>
               ))}
             </div>
