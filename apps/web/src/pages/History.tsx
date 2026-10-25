@@ -22,7 +22,12 @@ export function History({
   const confirm = useConfirm();
   const [loaded, reload] = useApi<{ versions: VersionSummary[] }>(apiVersions);
   const [open, setOpen] = useState<VersionDetail | null>(null);
-  const [diff, setDiff] = useState<{ from: VersionDetail; to: VersionDetail } | null>(null);
+  const [diff, setDiff] = useState<{
+    from: VersionDetail;
+    to: VersionDetail;
+    /** Which button opened it: the row's number and whether it compares with the live one. */
+    key: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
@@ -54,15 +59,29 @@ export function History({
   const older = (n: number) =>
     loaded.state === "ok" ? loaded.data.versions.find((x) => x.number < n)?.number : undefined;
 
-  async function showDiff(n: number) {
-    const prev = older(n);
-    if (prev === undefined) return;
+  /** The live version's number. */
+  const live =
+    loaded.state === "ok" ? loaded.data.versions.find((x) => x.current)?.number : undefined;
+
+  /**
+   * Toggles a diff: version `n` against the one before it, or (`withLive`) against the live
+   * version, so an old version can be compared with the current one (#38).
+   */
+  async function showDiff(n: number, withLive = false) {
+    const key = `${String(n)}${withLive ? ":live" : ""}`;
+    if (diff?.key === key) {
+      setDiff(null);
+      return;
+    }
+    const base = withLive ? n : older(n);
+    const target = withLive ? live : n;
+    if (base === undefined || target === undefined) return;
     const [from, to] = await Promise.all([
-      get<VersionDetail>(`${apiVersions}?n=${String(prev)}`),
-      get<VersionDetail>(`${apiVersions}?n=${String(n)}`),
+      get<VersionDetail>(`${apiVersions}?n=${String(base)}`),
+      get<VersionDetail>(`${apiVersions}?n=${String(target)}`),
     ]);
     setOpen(null);
-    setDiff({ from, to });
+    setDiff({ from, to, key });
   }
 
   if (loaded.state === "loading") {
@@ -94,13 +113,24 @@ export function History({
                 <Button
                   size="small"
                   aria-label={t("diff.button", { n: String(v.number) })}
+                  aria-pressed={diff?.key === String(v.number)}
                   onClick={() => void showDiff(v.number)}
                 >
                   {t("diff.short")}
                 </Button>
               )}
+              {!v.current && (
+                <Button
+                  size="small"
+                  aria-pressed={diff?.key === `${String(v.number)}:live`}
+                  onClick={() => void showDiff(v.number, true)}
+                >
+                  {t("diff.withLive")}
+                </Button>
+              )}
               <Button
                 size="small"
+                aria-expanded={open?.number === v.number}
                 onClick={() => {
                   setDiff(null);
                   if (open?.number === v.number) setOpen(null);

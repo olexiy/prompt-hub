@@ -66,6 +66,14 @@ test("new version by button, history, restore, plain save edits in place", async
   await expect(diff).toContainText("New variable тема");
   await expectFitsScreen(page);
 
+  // An old version compared with the live one (#38); a second click closes the diff.
+  const withLive = page.getByRole("button", { name: "Compare with live" });
+  await withLive.click();
+  await expect(diff).toContainText("v1 → v2");
+  await expect(withLive).toHaveAttribute("aria-pressed", "true");
+  await withLive.click();
+  await expect(diff).toHaveCount(0);
+
   await page.getByRole("button", { name: "View" }).last().click();
   await expect(page.getByTestId("version-body")).toHaveText("Dear {{name}}, first draft.");
   await page.getByRole("button", { name: "Restore" }).click();
@@ -74,6 +82,17 @@ test("new version by button, history, restore, plain save edits in place", async
   await page.getByRole("button", { name: /History/ }).click();
   await expect(page.getByTestId("prompt-preview")).toContainText("first draft");
   await expect(page.getByText("v3", { exact: true })).toBeVisible();
+
+  // Cancel with unsaved edits asks first (#38): "Keep editing" keeps them, "Discard" drops them.
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.getByText(/Save updates the live version v3/)).toBeVisible();
+  await page.getByLabel("Prompt text").fill("Unsaved text");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Keep editing" }).click();
+  await expect(page.getByLabel("Prompt text")).toHaveValue("Unsaved text");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Discard" }).click();
+  await expect(page.getByTestId("prompt-preview")).toContainText("first draft");
 
   // A plain save edits v3 in place: no v4 appears.
   await page.getByRole("button", { name: "Edit", exact: true }).click();

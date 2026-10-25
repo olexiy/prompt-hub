@@ -2,6 +2,12 @@
 
 Observations that are not decisions: measurements, surprises, things that did not work. Newest first, dated.
 
+## 2026-10-25 — UX review and local stack notes (#38)
+
+- **Docker Desktop would not start** after `wsl --shutdown`: "rename …/sailor-ingest.sock …sock.stale: The file cannot be accessed by the system". The AF_UNIX socket files left behind cannot be deleted, only their folders renamed. Fix: stop Docker processes, `wsl --shutdown`, rename `%LOCALAPPDATA%\Docker\run` and `%LOCALAPPDATA%\docker-secrets-engine`, recreate them empty, start Docker. Never "Reset to factory defaults".
+- **axe's `label-content-name-mismatch`** fails an `aria-label` that does not contain the visible text (a Primer `Button` with `count` shows "History 4"). Primer's counter is already hidden from assistive tech, so no override is needed; a browser tool that lists aria-hidden text reports it as "History 4 (4)".
+- The local stack is fast: p95 under 100 ms for sign-in and under 60 ms for reads at 5 parallel requests with 60 prompts (#37 draft).
+
 ## 2026-10-23 — Vertical slice UI notes (#41)
 
 - **The Windows clipboard turns `

@@ -1,6 +1,14 @@
 import type { ProjectSummary } from "@prompt-hub/core";
 import { ArchiveIcon, EyeIcon, TrashIcon } from "@primer/octicons-react";
-import { Banner, Button, FormControl, Heading, Textarea, TextInput } from "@primer/react";
+import {
+  Banner,
+  Button,
+  FormControl,
+  Heading,
+  Textarea,
+  TextInput,
+  useConfirm,
+} from "@primer/react";
 import { useState } from "react";
 import { ApiError, del, patch } from "../api";
 import { useI18n } from "../i18n";
@@ -71,11 +79,32 @@ export function ProjectSettings({
       onChanged();
     });
 
-  const toggleVisibility = () =>
-    run(async () => {
-      await patch(api, { visibility: project.visibility === "PUBLIC" ? "PRIVATE" : "PUBLIC" });
+  const confirm = useConfirm();
+  const [notice, setNotice] = useState<string | null>(null);
+
+  /** Going public is confirmed first, and says where the project can now be read (#38). */
+  async function toggleVisibility() {
+    const goPublic = project.visibility !== "PUBLIC";
+    if (
+      goPublic &&
+      !(await confirm({
+        title: t("settings.confirmPublicTitle", { name: project.name }),
+        content: t("settings.makePublicHint"),
+        confirmButtonContent: t("settings.makePublic"),
+        cancelButtonContent: t("item.cancel"),
+        confirmButtonType: "danger",
+      }))
+    ) {
+      return;
+    }
+    setNotice(null);
+    await run(async () => {
+      await patch(api, { visibility: goPublic ? "PUBLIC" : "PRIVATE" });
+      const url = `${window.location.origin}/${owner}/${project.slug}`;
+      setNotice(goPublic ? t("settings.nowPublic", { url }) : t("settings.nowPrivate"));
       onChanged();
     });
+  }
 
   const remove = () =>
     run(async () => {
@@ -87,6 +116,9 @@ export function ProjectSettings({
     <div className="ph-stack">
       {error && (
         <Banner variant="critical" title={error} hideTitle description={error} layout="compact" />
+      )}
+      {notice && (
+        <Banner variant="success" title={notice} hideTitle description={notice} layout="compact" />
       )}
       <form
         className="ph-box ph-form ph-pad"

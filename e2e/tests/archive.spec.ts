@@ -77,7 +77,7 @@ test("download a project as zip and import it again as a new project (#57)", asy
   await page.getByRole("link", { name: "Дождь" }).click();
   await page.getByRole("link", { name: "Девушка" }).click();
   await expect(page.getByTestId("prompt-preview")).toHaveText("Ждёт {{время}}.");
-  await expect(page.getByRole("list", { name: "Topics" }).first()).toContainText("видео");
+  await expect(page.getByRole("list", { name: "Tags" }).first()).toContainText("видео");
 
   expect(errors).toEqual([]);
 });

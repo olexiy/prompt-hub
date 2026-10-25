@@ -60,7 +60,7 @@ test("project settings: rename and new slug, archive, duplicate a prompt, delete
   await expect(page.getByText("This project is archived")).toBeVisible();
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "No projects yet" })).toBeVisible();
-  await page.getByRole("button", { name: "Archived" }).click();
+  await page.getByRole("button", { name: "Archived", exact: true }).click();
   await expectFitsScreen(page);
   await page.getByRole("link", { name: "Letters", exact: true }).click();
   await page.getByRole("button", { name: "Settings" }).click();

@@ -29,7 +29,7 @@ test("create project → create prompt → fill variables → copy the rendered 
   await expectFitsScreen(page);
 
   // Project: the slug is suggested from the name.
-  await page.getByRole("button", { name: "New project" }).click();
+  await page.getByRole("button", { name: "New project" }).first().click();
   await page.getByLabel(/^Name/).fill("Comfy H3");
   await expect(page.getByLabel("URL slug")).toHaveValue("comfy-h3");
   // A long word without spaces must wrap, not widen the page (#45).

@@ -47,6 +47,11 @@ test("a public project is readable signed out: live version only, no owner tools
   await page.goto(`/${handle}/pub`);
   await page.getByRole("button", { name: "Settings" }).click();
   await page.getByRole("button", { name: "Make public" }).click();
+  // Going public is confirmed in a dialog, then the public link is shown (#38).
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("Anyone with the link");
+  await dialog.getByRole("button", { name: "Make public" }).click();
+  await expect(page.getByText(/The project is public now: http/).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Make private" })).toBeVisible();
 
   // A visitor without an account.
