@@ -42,6 +42,7 @@ export const ru: Messages = {
   "auth.signInTitle": "Вход в Prompt Hub",
   "auth.resetTitle": "Сброс пароля",
   "auth.newPasswordTitle": "Новый пароль",
+  "auth.newPasswordFor": "Для аккаунта {email}.",
   "auth.email": "Email",
   "auth.password": "Пароль",
   "auth.newPassword": "Новый пароль",

@@ -30,6 +30,8 @@ export const cookiesOf = (res: Response) =>
 export interface TestSession {
   cookie: string;
   handle: string;
+  email: string;
+  password: string;
 }
 
 /**
@@ -63,7 +65,7 @@ export async function withNewUser(
       const me = await request("GET", "/api/me", undefined, cookie);
       handle = (await me.json<{ handle: string }>()).handle;
     }
-    await test({ cookie, handle });
+    await test({ cookie, handle, email, password });
   } finally {
     await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${id}`, {
       method: "DELETE",

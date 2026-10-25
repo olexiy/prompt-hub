@@ -42,6 +42,7 @@ export const de: Messages = {
   "auth.signInTitle": "Bei Prompt Hub anmelden",
   "auth.resetTitle": "Passwort zurücksetzen",
   "auth.newPasswordTitle": "Neues Passwort wählen",
+  "auth.newPasswordFor": "Für das Konto {email}.",
   "auth.email": "E-Mail-Adresse",
   "auth.password": "Passwort",
   "auth.newPassword": "Neues Passwort",

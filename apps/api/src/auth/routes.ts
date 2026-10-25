@@ -1,13 +1,14 @@
 /** /api/auth/* — sign-in, sign-out, refresh and password reset. Sign-up does not exist. */
 import { errorBody } from "@prompt-hub/core";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../app-env";
 import { clearSession, readSession, setSession } from "./cookies";
 import { createDb } from "@prompt-hub/db";
-import { verifyAccessToken } from "./jwt";
+import { isFreshLinkSession, verifyAccessToken } from "./jwt";
 import { ensureAppUser } from "./users";
-import { rateLimit } from "../security/rate-limit";
+import { log } from "../security/log";
+import { clientIp, rateLimit } from "../security/rate-limit";
 import { parseJson } from "../security/validate";
 import {
   AuthError,
@@ -25,7 +26,7 @@ const recoverySession = z.object({
   refreshToken: z.string().min(1).max(512),
   expiresIn: z.number().int().positive().max(86_400),
 });
-const newPassword = z.object({ password: z.string().min(12).max(200) });
+const newPassword = z.object({ password: z.string().min(12).max(200), link: recoverySession });
 
 export const authRoutes = new Hono<AppEnv>()
   .get("/session", async (c) => {
@@ -52,10 +53,15 @@ export const authRoutes = new Hono<AppEnv>()
   .post("/sign-in", rateLimit("AUTH_LIMITER"), async (c) => {
     const body = await parseJson(c, credentials, "enterCredentials");
     try {
-      setSession(c, await signInWithPassword(c.env, body.email, body.password));
+      const tokens = await signInWithPassword(c.env, body.email, body.password);
+      setSession(c, tokens);
+      const claims = await verifyAccessToken(tokens.accessToken, c.env.SUPABASE_URL);
+      log.info("auth_sign_in", { user: claims?.sub, ip: clientIp(c.req) });
       return c.json({ ok: true });
     } catch (e) {
       if (e instanceof AuthError && e.status === 401) {
+        // Security event (ASVS V16); the address itself is not logged.
+        log.warn("auth_sign_in_failed", { ip: clientIp(c.req) });
         return c.json(errorBody("badCredentials"), 401);
       }
       throw e;
@@ -85,21 +91,31 @@ export const authRoutes = new Hono<AppEnv>()
     // Same answer for known and unknown addresses (no account enumeration).
     return c.json({ ok: true });
   })
-  .post("/session", rateLimit("AUTH_LIMITER"), async (c) => {
-    // The reset link lands on /auth/callback with tokens in the URL fragment; the page hands
-    // them over once so they end up in HttpOnly cookies and can be dropped from the page.
+  .post("/link", rateLimit("AUTH_LIMITER"), async (c) => {
+    // The reset (or invite) link lands on /auth/callback with tokens in the URL fragment. The
+    // page asks here whose link it is and shows the address; no session is set yet (#61).
     const body = await parseJson(c, recoverySession, "invalidLink");
-    const claims = await verifyAccessToken(body.accessToken, c.env.SUPABASE_URL);
+    const claims = await linkClaims(c, body.accessToken);
     if (!claims) return c.json(errorBody("expiredLink"), 401);
-    setSession(c, body);
-    return c.json({ ok: true });
+    return c.json({ email: claims.email });
   })
   .post("/password", rateLimit("AUTH_LIMITER"), async (c) => {
+    // Sets the new password with the link's session and only then signs the visitor in (#61).
+    // A link someone else made for their own account therefore never signs anybody in by just
+    // being opened (login CSRF), and an ordinary session cannot change the password at all.
     const body = await parseJson(c, newPassword, "weakPassword");
-    const { access } = readSession(c);
-    if (!(await verifyAccessToken(access, c.env.SUPABASE_URL)) || !access) {
-      return c.json(errorBody("unauthorized"), 401);
-    }
-    await updatePassword(c.env, access, body.password);
+    const claims = await linkClaims(c, body.link.accessToken);
+    if (!claims) return c.json(errorBody("expiredLink"), 401);
+    await updatePassword(c.env, body.link.accessToken, body.password);
+    setSession(c, body.link);
+    log.info("auth_password_changed", { user: claims.sub, ip: clientIp(c.req) });
     return c.json({ ok: true });
   });
+
+/** Claims of a fresh email-link session, or null (logged as a refused link). */
+async function linkClaims(c: Context<AppEnv>, accessToken: string) {
+  const claims = await verifyAccessToken(accessToken, c.env.SUPABASE_URL);
+  if (claims && isFreshLinkSession(claims)) return claims;
+  log.warn("auth_link_refused", { ip: clientIp(c.req), user: claims?.sub });
+  return null;
+}

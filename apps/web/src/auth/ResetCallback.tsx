@@ -20,8 +20,9 @@ function readFragment(): RecoveryTokens | null {
 }
 
 /**
- * Landing page of the password-reset email (/auth/callback). Hands the tokens to the API once
- * (they become HttpOnly cookies), wipes them from the URL, then asks for the new password.
+ * Landing page of the password-reset email (/auth/callback). Keeps the link's tokens in memory,
+ * wipes them from the URL, shows which account the link is for, and signs in only once the new
+ * password is set (#61).
  */
 export function ResetCallback({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
@@ -32,12 +33,15 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Whose password this is, from the API: a link made for another account shows it here (#61).
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     history.replaceState(null, "", window.location.pathname);
     if (!tokens) return;
-    post("/api/auth/session", tokens).then(
-      () => {
+    post<{ email: string }>("/api/auth/link", tokens).then(
+      (res) => {
+        setEmail(res.email);
         setState("ready");
       },
       () => {
@@ -50,7 +54,8 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await post("/api/auth/password", { password });
+      // The session starts only now, with the new password set (#61).
+      await post("/api/auth/password", { password, link: tokens });
       onDone();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("error.generic"));
@@ -78,6 +83,7 @@ export function ResetCallback({ onDone }: { onDone: () => void }) {
 
   return (
     <AuthCard title={t("auth.newPasswordTitle")}>
+      {email && <p style={{ margin: 0 }}>{t("auth.newPasswordFor", { email })}</p>}
       {error && (
         <Banner variant="critical" title="Error" hideTitle layout="compact" description={error} />
       )}
